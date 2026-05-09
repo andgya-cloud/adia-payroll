@@ -344,13 +344,13 @@ function _h(s){
 }
 // Six authorised stakeholders — only these credentials unlock deletion
 var STAKEHOLDERS=[
-  {name:'Elizabeth Mutuku', username:'elizabeth.mutuku', role:'Principal',              hash:_h('Eliz@2026'), initial:'EM', email:'e.mutuku@adia.ac.ke'},
-  {name:'Elias Omondi',     username:'elias.omondi',     role:'Deputy Principal',      hash:_h('Elia@2026'), initial:'EO', email:'e.omondi@adia.ac.ke'},
-  {name:'Daniel Ojwang\'',  username:'daniel.ojwang',    role:'Finance Manager',       hash:_h('Dani@2026'), initial:'DO', email:'d.ojwang@adia.ac.ke'},
-  {name:'Doreen Mayaka',    username:'doreen.mayaka',    role:'HR Manager',            hash:_h('Dore@2026'), initial:'DM', email:'d.mayaka@adia.ac.ke'},
-  {name:'Andrew Guya',      username:'andrew.guya',      role:'Payroll Administrator', hash:_h('Andr@2026'), initial:'AG', email:'a.guya@adia.ac.ke'},
-  {name:'Ronald Awili',     username:'ronald.awili',     role:'Admin Officer',         hash:_h('Rona@2026'), initial:'RA', email:'r.awili@adia.ac.ke'},
-];
+  {name:'Elizabeth Mutuku', username:'elizabeth.mutuku', role:'Administrator', hash:'E888A4D0'},
+  {name:'Elias Omondi',     username:'elias.omondi',     role:'Board Chairman', hash:'D0CC3708'},
+  {name:'Daniel Ojwang\'',  username:'daniel.ojwang',    role:'Accountant',     hash:'78E72B98'},
+  {name:'Doreen Mayaka',    username:'doreen.mayaka',    role:'Board member',   hash:'2443A9C8'},
+  {name:'Andrew Guya',      username:'andrew.guya',      role:'Board member',   hash:'9F8059A8'},
+  {name:'Ronald Awili',     username:'ronald.awili',     role:'Board member',   hash:'F61CCE18'}
+  ];
 var MAX_ATTEMPTS=3;
 var _deleteTarget=null;   // { idx, attempts, authenticated: [] }
 var DELETE_LOG=[];        // audit trail
