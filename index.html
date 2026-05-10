@@ -257,6 +257,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--surface);color
 .shake{animation:shake .4s ease;}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -323,6 +325,20 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--surface);color
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE INIT — Real-time sync across all stakeholders
+// ═══════════════════════════════════════════════════════════════
+firebase.initializeApp({
+  apiKey: "AIzaSyCwxpCKeHqQ4Ohv1YT7rqkh5xhKpcVTo48",
+  authDomain: "adia-payroll-system.firebaseapp.com",
+  projectId: "adia-payroll-system",
+  storageBucket: "adia-payroll-system.firebasestorage.app",
+  messagingSenderId: "886053133035",
+  appId: "1:886053133035:web:0b7b4673814600f938bcae",
+  measurementId: "G-XCWTB472QN"
+});
+var db = firebase.firestore();
+
 // ═══════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════
@@ -1550,28 +1566,79 @@ var PAGES={
   settings:pageSettings,paye:pagePAYE,payslip:pagePayslip,
 };
 
-// ── PERSISTENCE ──
+// ═══════════════════════════════════════════════════════════════
+// FIRESTORE PERSISTENCE — Real-time sync across stakeholders
+// ═══════════════════════════════════════════════════════════════
+var _saving = false;  // prevent listener feedback loops
+
 function saveData(){
+  _saving = true;
   try{
-    localStorage.setItem('adia_emp',JSON.stringify(EMP));
-    localStorage.setItem('adia_leave',JSON.stringify(LEAVE_DATA));
-    localStorage.setItem('adia_changelog',JSON.stringify(CHANGE_LOG));
-    localStorage.setItem('adia_deletelog',JSON.stringify(DELETE_LOG));
-  }catch(e){}
+    db.collection('payroll_data').doc('employees').set({data: JSON.stringify(EMP)});
+    db.collection('payroll_data').doc('leave').set({data: JSON.stringify(LEAVE_DATA)});
+    db.collection('payroll_data').doc('changelog').set({data: JSON.stringify(CHANGE_LOG)});
+    db.collection('payroll_data').doc('deletelog').set({data: JSON.stringify(DELETE_LOG)});
+  }catch(e){console.error('Firestore save error:',e);}
+  setTimeout(function(){_saving=false;},500);
 }
-function loadData(){
-  try{
-    var e=localStorage.getItem('adia_emp');
-    if(e){EMP=JSON.parse(e);}
-    var l=localStorage.getItem('adia_leave');
-    if(l){LEAVE_DATA=JSON.parse(l);}
-    var c=localStorage.getItem('adia_changelog');
-    if(c){CHANGE_LOG=JSON.parse(c);}
-    var d=localStorage.getItem('adia_deletelog');
-    if(d){DELETE_LOG=JSON.parse(d);}
-  }catch(e){}
+
+function seedFirestore(){
+  // First-time setup: push default employees to Firestore
+  db.collection('payroll_data').doc('employees').get().then(function(doc){
+    if(!doc.exists || !doc.data().data || JSON.parse(doc.data().data).length===0){
+      saveData(); // Push the default 12 employees
+      console.log('Seeded Firestore with default data');
+    }
+  }).catch(function(e){console.error('Seed check error:',e);});
 }
-loadData();
+
+// ── REAL-TIME LISTENERS ──
+// When ANY stakeholder changes data, all others see it instantly
+function startRealtimeSync(){
+  db.collection('payroll_data').doc('employees').onSnapshot(function(doc){
+    if(_saving) return;
+    if(doc.exists && doc.data().data){
+      try{EMP=JSON.parse(doc.data().data);refreshUI();}catch(e){}
+    }
+  });
+  db.collection('payroll_data').doc('leave').onSnapshot(function(doc){
+    if(_saving) return;
+    if(doc.exists && doc.data().data){
+      try{LEAVE_DATA=JSON.parse(doc.data().data);refreshUI();}catch(e){}
+    }
+  });
+  db.collection('payroll_data').doc('changelog').onSnapshot(function(doc){
+    if(_saving) return;
+    if(doc.exists && doc.data().data){
+      try{CHANGE_LOG=JSON.parse(doc.data().data);}catch(e){}
+    }
+  });
+  db.collection('payroll_data').doc('deletelog').onSnapshot(function(doc){
+    if(_saving) return;
+    if(doc.exists && doc.data().data){
+      try{DELETE_LOG=JSON.parse(doc.data().data);}catch(e){}
+    }
+  });
+}
+
+function refreshUI(){
+  // Re-render current page without losing navigation state
+  var activePage = document.querySelector('.nav-item.active');
+  if(activePage){
+    var page = activePage.getAttribute('onclick');
+    if(page){
+      var match = page.match(/goto\('(\w+)'\)/);
+      if(match){
+        document.getElementById('content').innerHTML = PAGES[match[1]]();
+        document.getElementById('emp-badge').textContent = EMP.length;
+      }
+    }
+  }
+}
+
+// ── INIT FIRESTORE ──
+seedFirestore();
+startRealtimeSync();
 
 // ── INIT ──
 document.getElementById('month-pill').textContent = mname();
