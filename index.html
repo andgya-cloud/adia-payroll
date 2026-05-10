@@ -1,610 +1,1583 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive 3D Particles with Hand Tracking</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADIA Payroll Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#0D1B4B;--navy-deep:#080f2e;--navy-mid:#162060;
+  --gold:#C8960C;--gold-light:#f5e6b8;--gold-mid:#d4a843;
+  --white:#fff;--surface:#f4f6fb;--surface2:#edf0f8;
+  --text:#0D1B4B;--muted:#6b7a9e;--border:#d6dcee;
+  --red:#c0392b;--red-light:#fce8e7;
+  --green:#1B6B3A;--green-light:#e8f5ee;
+  --blue-label:#5b9ecf;--sidebar:228px;
+}
+html,body{height:100%;margin:0;padding:0;overflow:hidden;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--surface);color:var(--text);}
 
-        #canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
+/* ── SIDEBAR ── */
+.app{display:flex;height:100vh;}
+.sidebar{width:var(--sidebar);background:var(--navy);flex-shrink:0;display:flex;flex-direction:column;}
+.logo-area{padding:16px 14px 12px;border-bottom:1px solid rgba(200,150,12,0.3);text-align:center;}
+.logo-area img{width:76px;height:76px;border-radius:8px;display:block;margin:0 auto 8px;}
+.logo-name{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:1.6px;text-transform:uppercase;}
+.logo-sub{font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:0.8px;margin-top:2px;text-transform:uppercase;}
 
-        #video-element {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-            pointer-events: none;
-        }
+.nav{flex:1;padding:8px 0;overflow-y:auto;}
+.nav-section{font-size:9px;font-weight:700;color:rgba(255,255,255,0.28);letter-spacing:1.2px;text-transform:uppercase;padding:12px 16px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s;}
+.nav-item:hover{background:rgba(255,255,255,0.06);}
+.nav-item.active{background:rgba(200,150,12,0.15);border-left-color:var(--gold);}
+.nav-item .ni{font-size:14px;width:20px;text-align:center;flex-shrink:0;}
+.nav-item .nl{font-size:12.5px;color:rgba(255,255,255,0.72);white-space:nowrap;}
+.nav-item.active .nl{color:var(--gold);font-weight:600;}
+.nav-item .nb{margin-left:auto;background:var(--gold);color:var(--navy);font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;}
 
-        /* Hidden but active */
+.sidebar-footer{padding:11px 14px;border-top:1px solid rgba(255,255,255,0.08);}
+.user-chip{display:flex;align-items:center;gap:8px;}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--navy);flex-shrink:0;}
+.uname{font-size:11px;color:rgba(255,255,255,0.82);font-weight:500;}
+.urole{font-size:9px;color:rgba(255,255,255,0.38);}
 
-        #ui-panel {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 200px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.topbar{background:var(--white);padding:0 20px;height:52px;display:flex;align-items:center;border-bottom:1px solid var(--border);gap:14px;flex-shrink:0;}
+.page-title{font-size:15px;font-weight:700;color:var(--navy);}
+.page-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.month-pill{background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:6px;font-size:11px;color:var(--muted);}
+.btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:opacity .12s;}
+.btn:hover{opacity:.88;}
+.btn-gold{background:var(--gold);color:#fff;}
+.btn-navy{background:var(--navy);color:#fff;}
+.btn-outline{background:#fff;color:var(--navy);border:1px solid var(--border);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-green{background:var(--green);color:#fff;}
+.btn-sm{padding:4px 10px;font-size:11px;}
 
-        h1 {
-            margin: 0;
-            font-size: 1.2rem;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 5px;
-        }
+.content{flex:1;overflow-y:auto;padding:18px 20px;}
 
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+/* ── CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.k-label{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.k-val{font-size:22px;font-weight:700;}
+.k-sub{font-size:10px;color:var(--muted);margin-top:3px;}
 
-        label {
-            font-size: 0.85rem;
-            color: #aaa;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.card-title{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);padding-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
 
-        button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-        }
+.dr{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--surface2);font-size:12px;}
+.dr:last-child{border-bottom:none;}
+.dr .dl{color:var(--muted);}
+.dr .dv{font-weight:600;color:var(--navy);}
 
-        button:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
-        }
+.pb-wrap{margin-bottom:10px;}
+.pb-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
+.pb{background:var(--surface2);border-radius:4px;height:6px;}
+.pb-fill{height:6px;border-radius:4px;background:var(--gold);}
 
-        button:active {
-            transform: translateY(0);
-        }
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{background:var(--surface2);color:var(--navy);font-weight:700;padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--surface2);color:var(--text);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--surface);}
+.tbl .red{color:var(--red);}
+.tbl .grn{color:var(--green);font-weight:600;}
+.tbl .bold{font-weight:600;}
 
-        button.active {
-            background: #4a9eff;
-            border-color: #4a9eff;
-            color: white;
-        }
+.pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600;}
+.pill-active{background:var(--green-light);color:var(--green);}
+.pill-inactive{background:var(--red-light);color:var(--red);}
+.pill-leave{background:#fff3cd;color:#856404;}
+.pill-pending{background:#fff3cd;color:#856404;}
+.pill-filed{background:var(--green-light);color:var(--green);}
+.pill-approved{background:var(--green-light);color:var(--green);}
+.pill-rejected{background:var(--red-light);color:var(--red);}
 
-        input[type="color"] {
-            -webkit-appearance: none;
-            border: none;
-            width: 100%;
-            height: 35px;
-            cursor: pointer;
-            background: none;
-            padding: 0;
-        }
+/* ── ACTION LINKS ── */
+.act-link{color:var(--gold);cursor:pointer;font-size:11px;font-weight:600;border:none;background:none;padding:0;margin-left:6px;}
+.act-link:hover{text-decoration:underline;}
 
-        input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
+/* ── FORMS ── */
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:500;}
+.field input,.field select,.field textarea{
+  width:100%;padding:8px 10px;font-size:13px;
+  border:1px solid var(--border);border-radius:7px;
+  background:var(--white);color:var(--text);
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(200,150,12,.12);
+}
+.field textarea{resize:vertical;min-height:60px;}
+.hint{font-size:10px;color:var(--muted);margin-top:2px;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.sec-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--navy);border-bottom:2px solid var(--gold-light);padding-bottom:5px;margin-bottom:10px;margin-top:16px;}
+.sec-label:first-child{margin-top:0;}
 
-        input[type="color"]::-webkit-color-swatch {
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-        }
+/* ── PAYE RESULT ── */
+.res-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;margin-top:16px;}
+.chk{width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.res-title{font-size:15px;font-weight:700;color:var(--green);}
+.res-period{font-size:12px;color:var(--blue-label);margin-bottom:12px;}
+.res-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--surface2);font-size:13px;}
+.res-row .rl{color:var(--blue-label);}
+.res-row .rv{font-variant-numeric:tabular-nums;}
+.grp-hd{font-size:13px;font-weight:700;padding:9px 0 2px;}
+.sub-box{display:flex;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;margin:5px 0;font-size:13px;}
+.sub-box .sl{color:var(--blue-label);}
+.sub-box .sv{font-weight:700;font-variant-numeric:tabular-nums;}
+.net-card{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:14px;margin-top:10px;}
+.net-card .nl{font-size:13px;color:var(--blue-label);margin-bottom:4px;}
+.net-card .nv{font-size:22px;font-weight:700;}
 
-        #status {
-            font-size: 0.8rem;
-            text-align: center;
-            color: #888;
-            margin-top: 10px;
-        }
+/* ── PAYSLIP ── */
+.payslip-wrap{max-width:600px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.ps-header{background:var(--navy);padding:18px 20px;display:flex;align-items:center;gap:14px;}
+.ps-header img{width:52px;height:52px;border-radius:6px;}
+.ps-org h2{font-size:14px;font-weight:700;color:var(--gold);}
+.ps-org p{font-size:10px;color:rgba(255,255,255,.55);margin-top:1px;}
+.ps-period{margin-left:auto;text-align:right;}
+.ps-period .pm{font-size:11px;color:var(--gold);font-weight:600;}
+.ps-period .pp{font-size:10px;color:rgba(255,255,255,.45);}
+.ps-body{padding:16px 20px;}
+.ps-emp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;background:var(--surface);border-radius:7px;padding:12px;}
+.ps-field .pf-l{font-size:11px;color:var(--muted);margin-bottom:2px;}
+.ps-field .pf-v{font-weight:600;font-size:12px;color:var(--navy);}
+.ps-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;}
+.ps-tbl th{background:var(--navy);color:var(--gold);padding:7px 10px;text-align:left;font-size:10px;letter-spacing:.5px;text-transform:uppercase;}
+.ps-tbl td{padding:7px 10px;border-bottom:1px solid var(--surface2);}
+.ps-tbl td:last-child{text-align:right;font-variant-numeric:tabular-nums;}
+.ps-tbl .grp{background:var(--surface2);}
+.ps-tbl .grp td{font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:5px 10px;}
+.ps-tbl .total td{font-weight:700;background:var(--surface);}
+.ps-net{background:var(--navy);color:#fff;border-radius:7px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;}
+.ps-net .pn-l{font-size:12px;color:rgba(255,255,255,.7);}
+.ps-net .pn-v{font-size:20px;font-weight:700;color:var(--gold);}
+.ps-footer{padding:10px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);text-align:center;}
+.ps-actions{display:flex;gap:8px;margin-bottom:14px;}
 
-        .loading {
-            color: #f0ad4e;
-        }
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;}
+.modal{background:#fff;border-radius:12px;width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.modal-hdr{background:var(--navy);padding:16px 20px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-hdr h3{font-size:14px;font-weight:700;color:var(--gold);}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;line-height:1;}
+.modal-body{padding:20px;}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
 
-        .ready {
-            color: #5cb85c;
-        }
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;z-index:2000;transform:translateY(80px);opacity:0;transition:all .3s;border-left:4px solid var(--gold);}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-left-color:var(--green);}
+.toast.error{border-left-color:var(--red);}
 
-        .error {
-            color: #d9534f;
-        }
-    </style>
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- MediaPipe Hands & Camera Utils -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+/* ── STATUTORY CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;}
+.stat-card .sc-icon{font-size:20px;margin-bottom:6px;}
+.stat-card .sc-name{font-size:12px;font-weight:700;color:var(--navy);}
+.stat-card .sc-due{font-size:10px;color:var(--muted);margin-top:2px;}
+.stat-card .sc-amt{font-size:18px;font-weight:700;color:var(--navy);margin:8px 0;}
+.sc-status{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;display:inline-block;}
+.sc-filed{background:var(--green-light);color:var(--green);}
+.sc-pending{background:#fff3cd;color:#856404;}
+
+/* ── LEAVE SUMMARY ── */
+.leave-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.lv-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+.lv-card .lv-n{font-size:24px;font-weight:700;color:var(--navy);}
+.lv-card .lv-l{font-size:10px;color:var(--muted);}
+
+/* ── PAYROLL RUN STEPS ── */
+.run-steps{display:flex;margin-bottom:20px;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+.run-step{flex:1;padding:12px 8px;text-align:center;background:#fff;border-right:1px solid var(--border);font-size:10px;cursor:default;}
+.run-step:last-child{border-right:none;}
+.run-step.done{background:var(--green-light);color:var(--green);}
+.run-step.active-step{background:var(--navy);color:#fff;}
+.run-step .sn{font-weight:700;font-size:13px;display:block;margin-bottom:2px;}
+
+/* ── REPORT CARDS ── */
+.rpt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+.rpt-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.rpt-card:hover{border-color:var(--gold);box-shadow:0 2px 12px rgba(200,150,12,.15);}
+.rpt-icon{font-size:22px;margin-bottom:8px;}
+.rpt-name{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;}
+.rpt-desc{font-size:10px;color:var(--muted);}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty .ei{font-size:36px;margin-bottom:10px;}
+.empty p{font-size:13px;}
+
+/* ── SETTINGS TOGGLE ── */
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--surface2);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-label{font-size:12px;color:var(--navy);}
+.toggle-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:20px;transition:.3s;}
+.toggle-slider:before{position:absolute;content:"";height:14px;width:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle input:checked+.toggle-slider{background:var(--gold);}
+.toggle input:checked+.toggle-slider:before{transform:translateX(16px);}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* ── DELETE AUTH MODAL ── */
+.auth-modal-hdr{background:var(--red);padding:16px 20px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;}
+.auth-modal-hdr h3{font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;}
+.auth-warning{background:#fff8f8;border:1px solid #f5c6c6;border-radius:8px;padding:12px 14px;margin-bottom:14px;}
+.auth-warning p{font-size:12px;color:var(--red);line-height:1.5;}
+.auth-warning strong{font-weight:700;}
+.auth-who{background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:14px;}
+.auth-who-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px;}
+.auth-who-item{display:flex;align-items:center;gap:8px;padding:4px 0;}
+.auth-who-avatar{width:22px;height:22px;border-radius:50%;background:var(--navy);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.auth-who-name{font-size:12px;font-weight:500;color:var(--navy);}
+.auth-who-role{font-size:10px;color:var(--muted);}
+.delete-target-box{background:#fff0f0;border:1.5px dashed #e88;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.delete-target-box .dt-icon{font-size:20px;}
+.delete-target-box .dt-name{font-size:13px;font-weight:700;color:var(--red);}
+.delete-target-box .dt-info{font-size:11px;color:var(--muted);}
+.act-link-del{color:var(--red);cursor:pointer;font-size:11px;font-weight:700;border:none;background:none;padding:0;margin-left:6px;opacity:.85;}
+.act-link-del:hover{opacity:1;text-decoration:underline;}
+.auth-attempts{font-size:11px;color:var(--red);text-align:center;margin-top:8px;min-height:16px;}
+.shake{animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+</style>
 </head>
-
 <body>
 
-    <video id="video-element" playsinline></video>
-    <div id="canvas-container"></div>
+<div class="app">
 
-    <div id="ui-panel">
-        <h1>Particle Shapes</h1>
-
-        <div class="control-group">
-            <label>Templates</label>
-            <button onclick="setShape('heart')" id="btn-heart" class="active">Heart</button>
-            <button onclick="setShape('flower')" id="btn-flower">Flower</button>
-            <button onclick="setShape('saturn')" id="btn-saturn">Saturn</button>
-            <button onclick="setShape('buddha')" id="btn-buddha">Buddha</button>
-            <button onclick="setShape('fireworks')" id="btn-fireworks">Fireworks</button>
-        </div>
-
-        <div class="control-group">
-            <label>Color</label>
-            <input type="color" id="color-picker" value="#4a9eff">
-        </div>
-
-        <div id="status" class="loading">Initalizing Hands...</div>
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar">
+  <div class="logo-area">
+    <img id="sidebar-logo" src="data:image/png;base64,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" alt="ADIA">
+    <div class="logo-name">ADIA</div>
+    <div class="logo-sub">Training Centre</div>
+  </div>
+  <nav class="nav" id="nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" data-page="dashboard"><span class="ni">📊</span><span class="nl">Dashboard</span></div>
+    <div class="nav-item" data-page="employees"><span class="ni">👥</span><span class="nl">Employees</span><span class="nb" id="emp-badge">0</span></div>
+    <div class="nav-item" data-page="payroll"><span class="ni">💰</span><span class="nl">Payroll Run</span></div>
+    <div class="nav-section">Management</div>
+    <div class="nav-item" data-page="leave"><span class="ni">🗓️</span><span class="nl">Leave Management</span></div>
+    <div class="nav-item" data-page="statutory"><span class="ni">🏛️</span><span class="nl">Statutory Compliance</span></div>
+    <div class="nav-item" data-page="reports"><span class="ni">📈</span><span class="nl">Reports &amp; Analytics</span></div>
+    <div class="nav-section">Tools</div>
+    <div class="nav-item" data-page="settings"><span class="ni">⚙️</span><span class="nl">Settings</span></div>
+    <div class="nav-item" data-page="paye"><span class="ni">🧮</span><span class="nl">PAYE Calculator</span></div>
+    <div class="nav-item" data-page="payslip"><span class="ni">📄</span><span class="nl">Employee Payslip</span></div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">AG</div>
+      <div><div class="uname">Andy Guya</div><div class="urole">Payroll Admin</div></div>
     </div>
-
-    <script>
-        // --- CONFIGURATION ---
-        const PARTICLE_COUNT = 8000;
-        const PARTICLE_SIZE = 0.15;
-        const INITIAL_COLOR = 0x4a9eff;
-        const LERP_SPEED = 0.08; // Morphing speed
-
-        // --- STATE ---
-        let particles, geometry, material;
-        let positionsAttribute;
-        let targetPositions = new Float32Array(PARTICLE_COUNT * 3);
-        let currentPositions = new Float32Array(PARTICLE_COUNT * 3);
-        let scene, camera, renderer;
-        let time = 0;
-        let handTension = 0; // 0 to 1
-        let isHandDetected = false;
-        let currentScale = 1;
-        let targetScale = 1;
-
-        // --- INIT THREE.JS ---
-        function initScene() {
-            const container = document.getElementById('canvas-container');
-
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505);
-            // Add some fog for depth
-            scene.fog = new THREE.FogExp2(0x050505, 0.035);
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 15;
-            camera.position.y = 2;
-            camera.lookAt(0, 0, 0);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            container.appendChild(renderer.domElement);
-
-            // Particles
-            geometry = new THREE.BufferGeometry();
-
-            // Fill initial positions (random sphere)
-            for (let i = 0; i < PARTICLE_COUNT * 3; i++) {
-                currentPositions[i] = (Math.random() - 0.5) * 10;
-            }
-
-            geometry.setAttribute('position', new THREE.BufferAttribute(currentPositions, 3));
-
-            // Texture for particle (soft dot)
-            const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
-
-            material = new THREE.PointsMaterial({
-                color: INITIAL_COLOR,
-                size: PARTICLE_SIZE,
-                map: sprite,
-                transparent: true,
-                alphaTest: 0.5,
-                blending: THREE.AdditiveBlending,
-                opacity: 0.8
-            });
-
-            particles = new THREE.Points(geometry, material);
-            scene.add(particles);
-
-            // Initial Shape
-            generateHeart();
-
-            // Resize listener
-            window.addEventListener('resize', onWindowResize, false);
-
-            // Start Loop
-            animate();
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // --- SHAPE GENERATORS ---
-        // Helper: Random point in sphere
-        function randomSpherePoint(radius) {
-            const u = Math.random();
-            const v = Math.random();
-            const theta = 2 * Math.PI * u;
-            const phi = Math.acos(2 * v - 1);
-            const x = radius * Math.sin(phi) * Math.cos(theta);
-            const y = radius * Math.sin(phi) * Math.sin(theta);
-            const z = radius * Math.cos(phi);
-            return { x, y, z };
-        }
-
-        function setShape(name) {
-            // Update UI buttons
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${name}`).classList.add('active');
-
-            switch (name) {
-                case 'heart': generateHeart(); break;
-                case 'flower': generateFlower(); break;
-                case 'saturn': generateSaturn(); break;
-                case 'buddha': generateBuddha(); break; // Approximation
-                case 'fireworks': generateFireworks(); break;
-            }
-        }
-
-        function generateHeart() {
-            // Parametric Heart
-            // x = 16sin^3(t)
-            // y = 13cos(t) - 5cos(2t) - 2cos(3t) - cos(4t)
-            // z = variation width
-            const scale = 0.25;
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                const t = Math.random() * Math.PI * 2;
-                // Add some thickness variance
-                const r = Math.random();
-
-                // Spread points slightly off the line to make it 3D-ish volume
-                const spread = (Math.random() - 0.5) * 2;
-
-                const x = 16 * Math.pow(Math.sin(t), 3);
-                const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-                const z = spread * 3;
-
-                targetPositions[i * 3] = x * scale;
-                targetPositions[i * 3 + 1] = y * scale + 2; // Offset y to center
-                targetPositions[i * 3 + 2] = z * scale;
-            }
-        }
-
-        function generateFlower() {
-            // Polar roses: r = cos(k*theta)
-            const k = 4; // Petals
-            const scale = 5;
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                const theta = Math.random() * Math.PI * 2;
-                const phi = (Math.random() - 0.5) * Math.PI; // 3D spread
-
-                // Base radius modulated by sine wave for petals
-                let r = Math.cos(k * theta) + 1.5; // +1.5 to keep center open
-                r *= (Math.random() * 0.5 + 0.5); // Randomize radial fill
-
-                const x = r * Math.cos(theta) * scale;
-                const y = r * Math.sin(theta) * scale;
-                const z = (Math.random() - 0.5) * 2; // Flat-ish
-
-                targetPositions[i * 3] = x;
-                targetPositions[i * 3 + 1] = y;
-                targetPositions[i * 3 + 2] = z;
-            }
-        }
-
-        function generateSaturn() {
-            const planetRadius = 3;
-            const ringInner = 4.5;
-            const ringOuter = 7;
-            const ringRatio = 0.6; // % of particles for ring
-
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                if (i < PARTICLE_COUNT * (1 - ringRatio)) {
-                    // Planet Body (Sphere)
-                    const p = randomSpherePoint(planetRadius);
-                    targetPositions[i * 3] = p.x;
-                    targetPositions[i * 3 + 1] = p.y;
-                    targetPositions[i * 3 + 2] = p.z;
-                } else {
-                    // Ring (Disc with hole)
-                    const theta = Math.random() * Math.PI * 2;
-                    const r = ringInner + Math.random() * (ringOuter - ringInner);
-                    const x = r * Math.cos(theta);
-                    const z = r * Math.sin(theta);
-                    const y = (Math.random() - 0.5) * 0.2; // Thin ring
-
-                    // Tilt the ring
-                    const tilt = Math.PI / 6; // 30 degrees
-                    // Rotate around X axis
-                    const yRot = y * Math.cos(tilt) - z * Math.sin(tilt);
-                    const zRot = y * Math.sin(tilt) + z * Math.cos(tilt);
-
-                    targetPositions[i * 3] = x;
-                    targetPositions[i * 3 + 1] = yRot;
-                    targetPositions[i * 3 + 2] = zRot;
-                }
-            }
-        }
-
-        function generateBuddha() {
-            // Rough approximation using stacked spheres/volumes
-            // Head, Body, Crossed Legs
-            // Ratios based on simple figure drawing
-
-            const headP = 0.15;
-            const bodyP = 0.35;
-            const legsP = 0.5;
-
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                let x, y, z;
-
-                if (i < PARTICLE_COUNT * headP) {
-                    // Head
-                    const p = randomSpherePoint(1.2);
-                    x = p.x;
-                    y = p.y + 4.5;
-                    z = p.z;
-                } else if (i < PARTICLE_COUNT * (headP + bodyP)) {
-                    // Body (Oval/Cylinderish)
-                    const theta = Math.random() * Math.PI * 2;
-                    const h = Math.random() * 3.5; // Height
-                    const r = 2.0 * (1 - Math.abs(h / 3.5 - 0.5) * 0.5); // Taper slighty
-                    x = r * Math.cos(theta) * (Math.random());
-                    z = r * Math.sin(theta) * (Math.random());
-                    y = h + 1.0;
-                } else {
-                    // Legs (Torus half or flattened sphere interaction)
-                    // Let's do a wide flattened ellipsoid at base
-                    const p = randomSpherePoint(3.5);
-                    x = p.x * 1.5; // Wider x
-                    y = Math.abs(p.y) * 0.8; // flattening bottom? no, just create volume
-                    y = p.y * 0.5 + 0.5; // Squat
-                    z = p.z * 1.2; // Wider z
-                }
-
-                targetPositions[i * 3] = x;
-                targetPositions[i * 3 + 1] = y - 2; // Center vertically
-                targetPositions[i * 3 + 2] = z;
-            }
-        }
-
-        function generateFireworks() {
-            // Burst from center logic
-            // But to make it a shape, we'll make a large sphere 
-            // where particles are concentrated in "streamers" (lines from center)
-            const numStreamers = 50;
-            const particlesPerStreamer = Math.floor(PARTICLE_COUNT / numStreamers);
-            const maxRadius = 8;
-
-            for (let s = 0; s < numStreamers; s++) {
-                // Random direction for this streamer
-                const u = Math.random();
-                const v = Math.random();
-                const theta = 2 * Math.PI * u;
-                const phi = Math.acos(2 * v - 1);
-
-                const dirX = Math.sin(phi) * Math.cos(theta);
-                const dirY = Math.sin(phi) * Math.sin(theta);
-                const dirZ = Math.cos(phi);
-
-                for (let p = 0; p < particlesPerStreamer; p++) {
-                    const idx = (s * particlesPerStreamer + p) * 3;
-                    if (idx >= targetPositions.length) break;
-
-                    // Distribute along the line with some randomness
-                    const dist = Math.random() * maxRadius;
-                    // Spread width of streamer
-                    const spread = 0.2;
-
-                    targetPositions[idx] = dirX * dist + (Math.random() - 0.5) * spread;
-                    targetPositions[idx + 1] = dirY * dist + (Math.random() - 0.5) * spread;
-                    targetPositions[idx + 2] = dirZ * dist + (Math.random() - 0.5) * spread;
-                }
-            }
-        }
-
-        // --- HAND TRACKING ---
-        const videoElement = document.getElementById('video-element');
-        const statusElement = document.getElementById('status');
-
-        function onResults(results) {
-            statusElement.className = 'ready';
-            statusElement.innerText = "Tracking Active";
-
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                isHandDetected = true;
-
-                // Calculate average tension of all detected hands
-                let totalTension = 0;
-
-                for (const landmarks of results.multiHandLandmarks) {
-                    totalTension += calculateHandTension(landmarks);
-                }
-
-                handTension = totalTension / results.multiHandLandmarks.length;
-            } else {
-                isHandDetected = false;
-                handTension = 0;
-            }
-        }
-
-        function calculateHandTension(landmarks) {
-            // Palm center (approximate with Wrist (0) + Middle Finger MCP (9))
-            // Actually, let's just use Wrist (0) as base.
-            const wrist = landmarks[0];
-
-            // Fingertips: 4 (Thumb), 8 (Index), 12 (Middle), 16 (Ring), 20 (Pinky)
-            const tips = [4, 8, 12, 16, 20];
-            let avgDist = 0;
-
-            tips.forEach(idx => {
-                const tip = landmarks[idx];
-                const d = Math.sqrt(
-                    Math.pow(tip.x - wrist.x, 2) +
-                    Math.pow(tip.y - wrist.y, 2) +
-                    Math.pow(tip.z - wrist.z, 2)
-                );
-                avgDist += d;
-            });
-
-            avgDist /= 5;
-
-            // Map distance to 0-1 range
-            // Closed fist ~0.15 - 0.2
-            // Open hand ~0.4 - 0.6
-            // These values depend on camera distance, but normalized coords help.
-            // Using approximate heuristic values:
-            const minOpen = 0.15;
-            const maxOpen = 0.45;
-
-            let tension = (avgDist - minOpen) / (maxOpen - minOpen);
-            tension = Math.max(0, Math.min(1, tension));
-
-            return tension;
-        }
-
-        const hands = new Hands({
-            locateFile: (file) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-            }
-        });
-
-        hands.setOptions({
-            maxNumHands: 2,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-        });
-
-        hands.onResults(onResults);
-
-        const cameraUtils = new Camera(videoElement, {
-            onFrame: async () => {
-                await hands.send({ image: videoElement });
-            },
-            width: 640,
-            height: 480
-        });
-
-        cameraUtils.start()
-            .then(() => {
-                statusElement.innerText = "Camera Started";
-            })
-            .catch(err => {
-                console.error(err);
-                statusElement.className = 'error';
-                statusElement.innerText = "Camera Error (See Console)";
-            });
-
-        // --- ANIMATION ---
-        function animate() {
-            requestAnimationFrame(animate);
-            time += 0.01;
-
-            const positions = particles.geometry.attributes.position.array;
-
-            // Interaction Logic: 
-            // Tension 0 (Fist) -> Contraction / Small Scale
-            // Tension 1 (Open) -> Expansion / Large Scale
-            // If no hand, breathe normally around scale 1.0
-
-            if (isHandDetected) {
-                // Map tension (0..1) to scale (0.5 .. 2.0)
-                // 0 -> 0.5
-                // 1 -> 2.0
-                const desiredScale = 0.5 + (handTension * 1.5);
-                targetScale += (desiredScale - targetScale) * 0.1; // Smooth transition
-            } else {
-                // Idle breathing
-                targetScale += (1.0 + Math.sin(time) * 0.1 - targetScale) * 0.05;
-            }
-
-            // Update Loop
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                const px = positions[i * 3];
-                const py = positions[i * 3 + 1];
-                const pz = positions[i * 3 + 2];
-
-                const tx = targetPositions[i * 3];
-                const ty = targetPositions[i * 3 + 1];
-                const tz = targetPositions[i * 3 + 2];
-
-                // 1. Morphing: Move towards target shape
-                // We actually want to apply Scale to the TARGET position, not the current one iteratively.
-                // But current position tracks target. 
-
-                // Apply Scale to Target
-                const scaledTx = tx * targetScale;
-                const scaledTy = ty * targetScale;
-                const scaledTz = tz * targetScale;
-
-                // Lerp towards Scaled Target
-                positions[i * 3] += (scaledTx - px) * LERP_SPEED;
-                positions[i * 3 + 1] += (scaledTy - py) * LERP_SPEED;
-                positions[i * 3 + 2] += (scaledTz - pz) * LERP_SPEED;
-
-                // 2. Add some noise/drift if idle for organic feel
-                if (!isHandDetected) {
-                    positions[i * 3] += Math.sin(time + px) * 0.002;
-                    positions[i * 3 + 1] += Math.cos(time + py) * 0.002;
-                }
-            }
-
-            particles.geometry.attributes.position.needsUpdate = true;
-
-            // Rotate the whole system slowly
-            if (particles) {
-                particles.rotation.y += 0.002;
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        // --- UI EVENTS ---
-        document.getElementById('color-picker').addEventListener('input', (e) => {
-            if (material) {
-                material.color.set(e.target.value);
-            }
-        });
-
-        // Start
-        initScene();
-
-    </script>
+  </div>
+</div><!-- /sidebar -->
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="page-title">Dashboard</div>
+      <div class="page-sub" id="page-sub">Overview</div>
+    </div>
+    <div class="topbar-right">
+      <div class="month-pill" id="month-pill"></div>
+      <button class="btn btn-gold" onclick="goto('payroll')">▶ Run Payroll</button>
+    </div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+</div><!-- /app -->
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="modal-title">Modal</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+var EMP = [
+  {id:'E001',name:'James Mwangi',dept:'Administration',role:'Senior Administrator',basic:120000,status:'Active',phone:'0722 100 001',email:'j.mwangi@adia.ac.ke',joined:'2020-03-15'},
+  {id:'E002',name:'Faith Wambua',dept:'Finance',role:'Accountant',basic:75000,status:'Active',phone:'0722 100 002',email:'f.wambua@adia.ac.ke',joined:'2021-06-01'},
+  {id:'E003',name:'Peter Odhiambo',dept:'Academic',role:'Senior Lecturer',basic:65000,status:'Active',phone:'0722 100 003',email:'p.odhiambo@adia.ac.ke',joined:'2019-09-10'},
+  {id:'E004',name:'Grace Njeri',dept:'Administration',role:'Administrative Assistant',basic:38000,status:'Active',phone:'0722 100 004',email:'g.njeri@adia.ac.ke',joined:'2022-01-20'},
+  {id:'E005',name:'Samuel Kipkoech',dept:'IT',role:'Systems Administrator',basic:82000,status:'Active',phone:'0722 100 005',email:'s.kipkoech@adia.ac.ke',joined:'2021-02-14'},
+  {id:'E006',name:'Mary Achieng',dept:'Academic',role:'Lecturer',basic:55000,status:'Active',phone:'0722 100 006',email:'m.achieng@adia.ac.ke',joined:'2020-08-05'},
+  {id:'E007',name:'Daniel Ojwang',dept:'Finance',role:'Finance Manager',basic:95000,status:'Active',phone:'0722 100 007',email:'d.ojwang@adia.ac.ke',joined:'2018-04-22'},
+  {id:'E008',name:'Doreen Mayaka',dept:'Administration',role:'HR Manager',basic:88000,status:'Active',phone:'0722 100 008',email:'d.mayaka@adia.ac.ke',joined:'2019-11-03'},
+  {id:'E009',name:'Ronald Awili',dept:'Administration',role:'Admin Officer',basic:52000,status:'Active',phone:'0722 100 009',email:'r.awili@adia.ac.ke',joined:'2023-03-18'},
+  {id:'E010',name:'Elizabeth Mutuku',dept:'Academic',role:'Principal',basic:110000,status:'Active',phone:'0722 100 010',email:'e.mutuku@adia.ac.ke',joined:'2017-01-10'},
+  {id:'E011',name:'Elias Omondi',dept:'Academic',role:'Deputy Principal',basic:98000,status:'Leave',phone:'0722 100 011',email:'e.omondi@adia.ac.ke',joined:'2018-07-15'},
+  {id:'E012',name:'Susan Wanjiku',dept:'Library',role:'Librarian',basic:35000,status:'Inactive',phone:'0722 100 012',email:'s.wanjiku@adia.ac.ke',joined:'2022-09-01'}
+];
+
+var LEAVE_DATA = []; // Ready for real leave requests
+
+var PAYROLL_STEP = 0; // 0-based (0=Verify, 1=Compute, 2=Apply Ded, 3=Review, 4=Generate)
+var NOTIFY_SETTINGS = {emailPayslip:true,smsPayday:false,reminderFiling:true,auditLog:true};
+
+// ═══════════════════════════════════════════════════════════════
+// DELETE AUTHENTICATION — Authorised Stakeholders Only
+// ═══════════════════════════════════════════════════════════════
+function _h(s){
+  /* Simple polynomial hash — passwords never stored in plain text */
+  var h=0x811c9dc5;
+  for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=(h*0x1000193)>>>0;}
+  return h.toString(16).toUpperCase();
+}
+// Six authorised stakeholders — only these credentials unlock deletion
+var STAKEHOLDERS=[
+  {name:'Elizabeth Mutuku', username:'elizabeth.mutuku', role:'Administrator',  hash:'E888A4D0', initial:'EM'},
+  {name:'Elias Omondi',     username:'elias.omondi',     role:'Board Chairman', hash:'D0CC3708', initial:'EO'},
+  {name:'Daniel Ojwang\'',  username:'daniel.ojwang',    role:'Accountant',     hash:'78E72B98', initial:'DO'},
+  {name:'Doreen Mayaka',    username:'doreen.mayaka',    role:'Board member',   hash:'2443A9C8', initial:'DM'},
+  {name:'Andrew Guya',      username:'andrew.guya',      role:'Board member',   hash:'9F8059A8', initial:'AG'},
+  {name:'Ronald Awili',     username:'ronald.awili',     role:'Board member',   hash:'F61CCE18', initial:'RA'}
+  ];
+var MAX_ATTEMPTS=3;
+var _deleteTarget=null;   // { idx, attempts, authenticated: [] }
+var DELETE_LOG=[];        // audit trail
+var CHANGE_LOG=[];        // system-wide change log for stakeholder visibility
+
+// ── CHANGE TRACKING & STAKEHOLDER NOTIFICATIONS ───────────────────
+function logChange(action, details, user){
+  var entry={
+    timestamp: new Date().toLocaleString('en-KE'),
+    action: action,
+    details: details,
+    user: user || 'System',
+    id: 'CHG'+(CHANGE_LOG.length+1)
+  };
+  CHANGE_LOG.unshift(entry);
+  // Keep only last 100 changes to avoid memory bloat
+  if(CHANGE_LOG.length > 100) CHANGE_LOG.length = 100;
+}
+
+function notifyStakeholders(message, changeType){
+  // In production, this would send actual emails/SMS to all 6 stakeholders
+  // For now, we log and show a toast
+  console.log('STAKEHOLDER NOTIFICATION:', message, 'to:', STAKEHOLDERS.map(function(s){return s.email;}).join(', '));
+  toast('✓ Change logged — All 6 stakeholders notified', 'success');
+}
+
+function viewChangeLog(){
+  if(!CHANGE_LOG.length){
+    openModal('System Change Log','<div class="empty"><div class="ei">📋</div><p>No system changes recorded yet.</p></div>');
+    return;
+  }
+  var rows=CHANGE_LOG.map(function(c){
+    return '<tr>'+
+      '<td style="font-size:10px;color:var(--muted)">'+c.timestamp+'</td>'+
+      '<td><strong>'+c.action+'</strong></td>'+
+      '<td style="font-size:11px">'+c.details+'</td>'+
+      '<td class="bold" style="color:var(--navy)">'+c.user+'</td>'+
+    '</tr>';
+  }).join('');
+  openModal('System Change Log — All Changes Visible to Stakeholders',
+    '<p style="font-size:11px;color:var(--muted);margin-bottom:12px">All changes are automatically visible to: '+
+    STAKEHOLDERS.map(function(s){return s.name;}).join(', ')+'</p>'+
+    '<table class="tbl"><thead><tr><th>Date & Time</th><th>Action</th><th>Details</th><th>By</th></tr></thead><tbody>'+rows+'</tbody></table>',
+    '<button class="btn btn-navy" onclick="exportChangeLog()">📥 Export Log</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Close</button>'
+  );
+}
+
+function exportChangeLog(){
+  var csv='Timestamp,Action,Details,User\n'+
+    CHANGE_LOG.map(function(c){
+      return '"'+c.timestamp+'","'+c.action+'","'+c.details+'","'+c.user+'"';
+    }).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='ADIA_Change_Log_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  toast('Change log exported','success');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAX FUNCTIONS (KRA 2026)
+// ═══════════════════════════════════════════════════════════════
+function cSHIF(g){return g*0.0275;}
+function cAHL(g){ return g*0.015;}
+function cIT(t){
+  if(t<=0)return 0;
+  var b=[[24000,.10],[8333,.25],[467667,.30],[300000,.325],[Infinity,.35]],tax=0,rem=t;
+  for(var i=0;i<b.length;i++){if(rem<=0)break;var c=Math.min(rem,b[i][0]);tax+=c*b[i][1];rem-=c;}
+  return tax;
+}
+function cPAYE(g,insRelief,mortRelief){
+  insRelief=insRelief||0; mortRelief=mortRelief||0;
+  var t=g-cSHIF(g)-cAHL(g);
+  return Math.max(0,cIT(t)-2400-Math.min(insRelief*.15,5000)-Math.min(mortRelief*.25,25000));
+}
+function cNet(g){return g-cSHIF(g)-cAHL(g)-cPAYE(g);}
+
+var activeEMP = function(){return EMP.filter(function(e){return e.status!=='Inactive';});};
+
+// ═══════════════════════════════════════════════════════════════
+// FORMATTERS
+// ═══════════════════════════════════════════════════════════════
+function fmt(v){return 'KES '+Math.round(v).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtN(v){return Math.round(v).toLocaleString('en-KE');}
+function ini(n){return n.split(' ').map(function(x){return x[0];}).join('').substring(0,2).toUpperCase();}
+function mname(){
+  var m=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return m[new Date().getMonth()]+' '+new Date().getFullYear();
+}
+function pill(s){
+  var map={Active:'pill-active',Inactive:'pill-inactive',Leave:'pill-leave',Pending:'pill-pending',Approved:'pill-approved',Rejected:'pill-rejected',Filed:'pill-filed'};
+  return '<span class="pill '+(map[s]||'pill-pending')+'">'+s+'</span>';
+}
+function gv(id){return (document.getElementById(id)||{}).value||'';}
+function gn(id){return parseFloat(gv(id))||0;}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST & MODAL
+// ═══════════════════════════════════════════════════════════════
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+(type||''); t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+function openModal(title,bodyHTML,footerHTML){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').innerHTML=bodyHTML;
+  document.getElementById('modal-footer').innerHTML=footerHTML||'<button class="btn btn-outline" onclick="closeModal()">Close</button>';
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+
+// ═══════════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════════
+var PAGE_META={
+  dashboard:{title:'Dashboard',         sub:function(){return 'Overview · '+mname();}},
+  employees: {title:'Employees',         sub:function(){return 'Staff register & management · '+EMP.length+' total';}},
+  payroll:   {title:'Payroll Run',        sub:function(){return mname()+' payroll';}},
+  leave:     {title:'Leave Management',   sub:function(){return 'Leave requests & balances';}},
+  statutory: {title:'Statutory Compliance',sub:function(){return 'PAYE · SHIF · AHL · NSSF';}},
+  reports:   {title:'Reports & Analytics', sub:function(){return 'Financial Year '+new Date().getFullYear();}},
+  settings:  {title:'Settings',           sub:function(){return 'System & tax configuration';}},
+  paye:      {title:'PAYE Calculator',    sub:function(){return 'KRA '+new Date().getFullYear()+' · Kenya Tax Rates';}},
+  payslip:   {title:'Employee Payslip',   sub:function(){return 'Individual payslip view';}},
+};
+function goto(page){
+  var item=document.querySelector('[data-page="'+page+'"]');
+  if(item) navTo(item,page);
+}
+function navTo(el,page){
+  document.querySelectorAll('.nav-item').forEach(function(i){i.classList.remove('active');});
+  el.classList.add('active');
+  var m=PAGE_META[page];
+  document.getElementById('page-title').textContent=m.title;
+  document.getElementById('page-sub').textContent=typeof m.sub==='function'?m.sub():m.sub;
+  document.getElementById('month-pill').textContent=mname();
+  document.getElementById('content').innerHTML=PAGES[page]();
+  window.scrollTo&&window.scrollTo(0,0);
+}
+document.getElementById('nav').addEventListener('click',function(e){
+  var item=e.target.closest('.nav-item');
+  if(item&&item.dataset.page) navTo(item,item.dataset.page);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SHARED HELPERS
+// ═══════════════════════════════════════════════════════════════
+function dr(l,v,vc){return '<div class="dr"><span class="dl">'+l+'</span><span class="dv"'+(vc?' style="color:'+vc+'"':'')+'>'+v+'</span></div>';}
+function kpi(l,v,s,c){return '<div class="kpi"><div class="k-label">'+l+'</div><div class="k-val" style="color:'+c+'">'+v+'</div><div class="k-sub">'+s+'</div></div>';}
+function deptBar(d,emps,total){
+  var sum=emps.reduce(function(s,e){return s+e.basic;},0);
+  var pct=total?Math.round(sum/total*100):0;
+  return '<div class="pb-wrap"><div class="pb-row"><span>'+d+'</span><span style="color:var(--muted)">'+pct+'%</span></div>'+
+    '<div class="pb"><div class="pb-fill" style="width:'+pct+'%"></div></div></div>';
+}
+function cardTitle(t,btnHtml){return '<div class="card-title">'+t+(btnHtml?btnHtml:'')+'</div>';}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+function pageDashboard(){
+  var ae=activeEMP();
+  var tB=ae.reduce(function(s,e){return s+e.basic;},0);
+  var tP=ae.reduce(function(s,e){return s+cPAYE(e.basic);},0);
+  var tS=ae.reduce(function(s,e){return s+cSHIF(e.basic);},0);
+  var tA=ae.reduce(function(s,e){return s+cAHL(e.basic);},0);
+  var activeOnly=ae.filter(function(e){return e.status==='Active';});
+  var onLeave=ae.filter(function(e){return e.status==='Leave';});
+  var inactive=EMP.filter(function(e){return e.status==='Inactive';});
+  var now=new Date();
+  var monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var shortMon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  var nextMonIdx=(now.getMonth()+1)%12;
+  var nextMonYear=now.getMonth()===11?now.getFullYear()+1:now.getFullYear();
+  var filingDeadline='9 '+shortMon[nextMonIdx]+' '+nextMonYear;
+  var recentEmpHtml=ae.length===0
+    ? '<div class="empty" style="padding:20px 0"><div class="ei" style="font-size:22px">👥</div><p style="font-size:12px">No employees yet.<br><a style="color:var(--gold);cursor:pointer;font-weight:600" onclick="openAddEmployee()">Add your first employee →</a></p></div>'
+    : ae.slice(0,5).map(function(e){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--surface2)">'+
+          '<div style="width:26px;height:26px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--gold);flex-shrink:0">'+ini(e.name)+'</div>'+
+          '<div><div style="font-size:12px;font-weight:500">'+e.name+'</div><div style="font-size:10px;color:var(--muted)">'+e.dept+'</div></div>'+
+          '<div style="margin-left:auto;font-size:12px;font-weight:600">'+fmt(e.basic)+'</div></div>';
+      }).join('');
+  var deptSpendHtml=tB===0
+    ? '<div class="empty" style="padding:16px 0"><p style="font-size:12px">No payroll data yet.</p></div>'
+    : ['Academic','Administration','Finance','IT','Security','Catering','Library'].map(function(d){
+        var dept=EMP.filter(function(e){return e.dept===d&&e.status!=='Inactive';});
+        return dept.length?deptBar(d,dept,tB):'';
+      }).join('');
+  return '<div class="kpi-grid">'+
+    kpi('Total Payroll',tB?'KES '+fmtN(tB):'KES 0.00','Active employees · '+mname(),'#C8960C')+
+    kpi('PAYE Payable',tP?'KES '+fmtN(tP):'KES 0.00','To KRA by 9th next month','#0D1B4B')+
+    kpi('SHIF Total',tS?'KES '+fmtN(tS):'KES 0.00','2.75% of gross · '+ae.length+' staff','#1B6B3A')+
+    kpi('Active Staff',activeOnly.length,(onLeave.length?onLeave.length+' on leave · ':'')+inactive.length+' inactive','#C8960C')+
+  '</div>'+
+  '<div class="grid2">'+
+    '<div class="card">'+cardTitle('Statutory Overview')+
+      dr('PAYE (KRA)',fmt(tP))+dr('SHIF (2.75%)',fmt(tS))+dr('Housing Levy (1.5%)',fmt(tA))+
+      dr('Total Statutory',fmt(tP+tS+tA))+
+      '<div style="margin-top:10px"><button class="btn btn-navy btn-sm" onclick="goto(\'statutory\')">View Compliance →</button></div>'+
+    '</div>'+
+    '<div class="card">'+cardTitle('Recent Employees','<button class="btn btn-gold btn-sm" onclick="openAddEmployee()">+ Add</button>')+
+      recentEmpHtml+
+    '</div>'+
+  '</div>'+
+  '<div class="grid2">'+
+    '<div class="card">'+cardTitle('Payroll Calendar')+
+      dr('Pay Period','1 – '+lastDay+' '+mname())+
+      dr('Processing Date','25 '+mname())+
+      dr('Payment Date',lastDay+' '+mname())+
+      dr('KRA Filing Deadline',filingDeadline)+
+      dr('SHIF Deadline',filingDeadline)+
+      '<div style="margin-top:10px"><button class="btn btn-navy btn-sm" onclick="goto(\'payroll\')">Run Payroll →</button></div>'+
+    '</div>'+
+    '<div class="card">'+cardTitle('Department Spend')+deptSpendHtml+'</div>'+
+  '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: EMPLOYEES
+// ═══════════════════════════════════════════════════════════════
+function pageEmployees(){
+  return '<div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">'+
+    '<input id="emp-search" placeholder="🔍  Search by name, department or role…" oninput="filterEmp()" style="flex:1;padding:8px 12px;font-size:13px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--text)">'+
+    '<select id="emp-filter" onchange="filterEmp()" style="padding:8px 10px;font-size:12px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--text)">'+
+      '<option value="">All Status</option><option>Active</option><option>Leave</option><option>Inactive</option>'+
+    '</select>'+
+    '<button class="btn btn-outline btn-sm" onclick="viewChangeLog()" title="View all system changes visible to stakeholders">📋 Change Log</button>'+
+    '<button class="btn btn-outline btn-sm" onclick="viewDeleteLog()" title="View deletion audit trail">🗑️ Delete Log</button>'+
+    '<button class="btn btn-gold" onclick="openAddEmployee()">+ Add Employee</button>'+
+  '</div>'+
+  '<div class="card" style="padding:0;overflow:hidden">'+
+    '<table class="tbl" id="emp-table"><thead><tr>'+
+      '<th>ID</th><th>Name</th><th>Department</th><th>Role</th>'+
+      '<th>Basic Salary</th><th>PAYE</th><th>Net Pay</th><th>Status</th><th>Actions</th>'+
+    '</tr></thead><tbody id="emp-tbody">'+empRows(EMP)+'</tbody></table>'+
+  '</div>';
+}
+function empRows(data){
+  if(data.length===0){
+    return '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted)">'+
+      '<div style="font-size:28px;margin-bottom:8px">👥</div>'+
+      '<div style="font-size:13px;margin-bottom:8px">No employees found.</div>'+
+      '<button class="btn btn-gold btn-sm" onclick="openAddEmployee()">+ Add First Employee</button>'+
+    '</td></tr>';
+  }
+  return data.map(function(e,i){
+    var idx=EMP.indexOf(e);
+    return '<tr>'+
+      '<td>'+e.id+'</td>'+
+      '<td class="bold">'+e.name+'</td>'+
+      '<td>'+e.dept+'</td><td>'+e.role+'</td>'+
+      '<td>'+fmt(e.basic)+'</td>'+
+      '<td class="red">'+fmt(cPAYE(e.basic))+'</td>'+
+      '<td class="grn">'+fmt(cNet(e.basic))+'</td>'+
+      '<td>'+pill(e.status)+'</td>'+
+      '<td>'+
+        '<button class="act-link" onclick="viewEmployee('+idx+')">View</button>'+
+        '<button class="act-link" onclick="editEmployee('+idx+')">Edit</button>'+
+        '<button class="act-link-del" onclick="deleteEmployee('+idx+')" title="Delete employee (requires authorisation)">🗑 Delete</button>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
+}
+function filterEmp(){
+  var q=(gv('emp-search')||'').toLowerCase();
+  var st=gv('emp-filter');
+  var filtered=EMP.filter(function(e){
+    var match=(e.name+e.dept+e.role).toLowerCase().indexOf(q)>-1;
+    var stMatch=!st||e.status===st;
+    return match&&stMatch;
+  });
+  document.getElementById('emp-tbody').innerHTML=empRows(filtered);
+}
+function viewEmployee(idx){
+  var e=EMP[idx];
+  openModal('Employee Details — '+e.name,
+    '<div class="ps-emp" style="margin-bottom:14px">'+
+      pf('ID',e.id)+pf('Name',e.name)+pf('Department',e.dept)+pf('Role',e.role)+
+      pf('Phone',e.phone)+pf('Email',e.email)+pf('Joined',e.joined)+pf('Status',e.status)+
+    '</div>'+
+    '<div class="card-title" style="margin-bottom:8px">Payroll Summary</div>'+
+    dr('Basic Salary',fmt(e.basic))+dr('SHIF',fmt(cSHIF(e.basic)))+
+    dr('Housing Levy',fmt(cAHL(e.basic)))+dr('PAYE Tax',fmt(cPAYE(e.basic)))+
+    dr('Net Pay',fmt(cNet(e.basic)),'#1B6B3A'),
+    '<button class="btn btn-navy" onclick="editEmployee('+idx+');closeModal()">Edit</button>'+
+    '<button class="btn btn-gold" onclick="emailEmployeeDetails('+idx+')">✉ Email to Employee</button>'+
+    '<button class="btn btn-outline" onclick="exportEmployeePDF('+idx+')">📄 Download PDF</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Close</button>'
+  );
+}
+
+function emailEmployeeDetails(idx){
+  var e=EMP[idx];
+  if(!e.email){
+    toast('No email address on file for '+e.name,'error');
+    return;
+  }
+  var subject = 'Your Employment Details - ADIA Training Centre';
+  var body = 'Dear '+e.name+',\n\n'+
+    'Here are your current employment details:\n\n'+
+    'Employee ID: '+e.id+'\n'+
+    'Department: '+e.dept+'\n'+
+    'Role: '+e.role+'\n'+
+    'Status: '+e.status+'\n\n'+
+    'Payroll Summary ('+mname()+'):\n'+
+    'Basic Salary: '+fmt(e.basic)+'\n'+
+    'SHIF (2.75%): '+fmt(cSHIF(e.basic))+'\n'+
+    'Housing Levy (1.5%): '+fmt(cAHL(e.basic))+'\n'+
+    'PAYE Tax: '+fmt(cPAYE(e.basic))+'\n'+
+    'Net Pay: '+fmt(cNet(e.basic))+'\n\n'+
+    'If you have any questions, please contact the HR department.\n\n'+
+    'Best regards,\n'+
+    'ADIA Training Centre\n'+
+    'Payroll Department';
+  
+  var mailtoLink = 'mailto:'+e.email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  window.location.href = mailtoLink;
+  
+  logChange('EMAIL SENT', 'Employee details emailed to '+e.name+' ('+e.email+')', 'Admin');
+  notifyStakeholders('Employee details emailed to: '+e.name, 'EMAIL_EMPLOYEE');
+  toast('✓ Email client opened — Details sent to '+e.email,'success');
+}
+
+function exportEmployeePDF(idx){
+  var e=EMP[idx];
+  var LOGO_SRC=document.getElementById('sidebar-logo').src;
+  
+  // Create a printable HTML document
+  var printContent = '<html><head><title>Employee Details - '+e.name+'</title>'+
+    '<style>'+
+      'body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:0 auto;}'+
+      '.header{background:#0D1B4B;color:#fff;padding:20px;margin-bottom:30px;border-radius:8px;display:flex;align-items:center;gap:15px;}'+
+      '.header img{width:60px;height:60px;border-radius:6px;}'+
+      '.header h1{color:#C8960C;font-size:18px;margin:0;}'+
+      '.header p{margin:5px 0 0;font-size:12px;opacity:0.7;}'+
+      '.section{margin-bottom:25px;}'+
+      '.section-title{font-size:14px;font-weight:700;color:#0D1B4B;border-bottom:2px solid #C8960C;padding-bottom:8px;margin-bottom:15px;}'+
+      '.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}'+
+      '.info-item{padding:10px;background:#f4f6fb;border-radius:6px;}'+
+      '.info-label{font-size:11px;color:#6b7a9e;margin-bottom:4px;}'+
+      '.info-value{font-size:13px;font-weight:600;color:#0D1B4B;}'+
+      '.payroll-row{display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid #edf0f8;}'+
+      '.payroll-row:last-child{border-bottom:none;background:#f4f6fb;font-weight:700;}'+
+      '.footer{margin-top:40px;padding-top:20px;border-top:1px solid #d6dcee;font-size:11px;color:#6b7a9e;text-align:center;}'+
+    '</style>'+
+    '</head><body>'+
+    '<div class="header">'+
+      '<img src="'+LOGO_SRC+'" alt="ADIA">'+
+      '<div><h1>ADIA Training Centre</h1><p>Employee Details Report</p></div>'+
+    '</div>'+
+    '<div class="section">'+
+      '<div class="section-title">Personal Information</div>'+
+      '<div class="info-grid">'+
+        '<div class="info-item"><div class="info-label">Employee ID</div><div class="info-value">'+e.id+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Full Name</div><div class="info-value">'+e.name+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Department</div><div class="info-value">'+e.dept+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Role</div><div class="info-value">'+e.role+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Phone</div><div class="info-value">'+e.phone+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Email</div><div class="info-value">'+e.email+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Date Joined</div><div class="info-value">'+e.joined+'</div></div>'+
+        '<div class="info-item"><div class="info-label">Status</div><div class="info-value">'+e.status+'</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="section">'+
+      '<div class="section-title">Payroll Summary ('+mname()+')</div>'+
+      '<div class="payroll-row"><span>Basic Salary</span><span>'+fmt(e.basic)+'</span></div>'+
+      '<div class="payroll-row"><span>SHIF (2.75%)</span><span>'+fmt(cSHIF(e.basic))+'</span></div>'+
+      '<div class="payroll-row"><span>Housing Levy (1.5%)</span><span>'+fmt(cAHL(e.basic))+'</span></div>'+
+      '<div class="payroll-row"><span>PAYE Tax</span><span>'+fmt(cPAYE(e.basic))+'</span></div>'+
+      '<div class="payroll-row"><span>Net Pay</span><span style="color:#1B6B3A">'+fmt(cNet(e.basic))+'</span></div>'+
+    '</div>'+
+    '<div class="footer">'+
+      'Generated on '+new Date().toLocaleString('en-KE')+'<br>'+
+      'ADIA Training Centre · Nairobi, Kenya · P051234567A'+
+    '</div>'+
+    '</body></html>';
+  
+  // Open in new window and trigger print
+  var printWindow = window.open('', '_blank', 'width=800,height=900');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  printWindow.onload = function(){
+    printWindow.print();
+  };
+  
+  logChange('PDF EXPORTED', 'Employee details PDF generated for '+e.name+' ('+e.id+')', 'Admin');
+  notifyStakeholders('Employee PDF exported: '+e.name, 'EXPORT_PDF');
+  toast('✓ PDF opened in new window — Use Print > Save as PDF','success');
+}
+function editEmployee(idx){
+  var e=EMP[idx];
+  openModal('Edit Employee — '+e.name,
+    '<div class="f2">'+
+      fld('First Name','ef_name',e.name)+fld('Department','ef_dept',e.dept,'select',['Administration','Finance','Academic','IT','Security','Catering','Library'])+
+    '</div>'+
+    fld('Role / Job Title','ef_role',e.role)+
+    '<div class="f2">'+
+      fld('Basic Salary (KES)','ef_basic',e.basic,'number')+
+      fld('Status','ef_status',e.status,'select',['Active','Leave','Inactive'])+
+    '</div>'+
+    '<div class="f2">'+fld('Phone','ef_phone',e.phone)+fld('Email','ef_email',e.email)+'</div>',
+    '<button class="btn btn-gold" onclick="saveEmployee('+idx+')">Save Changes</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+  );
+}
+function saveEmployee(idx){
+  var oldData = JSON.parse(JSON.stringify(EMP[idx])); // Clone for comparison
+  EMP[idx].name=gv('ef_name')||EMP[idx].name;
+  EMP[idx].dept=gv('ef_dept')||EMP[idx].dept;
+  EMP[idx].role=gv('ef_role')||EMP[idx].role;
+  EMP[idx].basic=parseFloat(gv('ef_basic'))||EMP[idx].basic;
+  EMP[idx].status=gv('ef_status')||EMP[idx].status;
+  EMP[idx].phone=gv('ef_phone')||EMP[idx].phone;
+  EMP[idx].email=gv('ef_email')||EMP[idx].email;
+  
+  // Log change and notify stakeholders
+  var changes = [];
+  if(oldData.basic !== EMP[idx].basic) changes.push('Salary: '+fmt(oldData.basic)+' → '+fmt(EMP[idx].basic));
+  if(oldData.dept !== EMP[idx].dept) changes.push('Dept: '+oldData.dept+' → '+EMP[idx].dept);
+  if(oldData.status !== EMP[idx].status) changes.push('Status: '+oldData.status+' → '+EMP[idx].status);
+  
+  if(changes.length > 0){
+    logChange('EMPLOYEE UPDATED', EMP[idx].name+' ('+EMP[idx].id+'): '+changes.join(', '), 'Admin');
+    notifyStakeholders('Employee updated: '+EMP[idx].name+' — '+changes.join(', '), 'UPDATE_EMPLOYEE');
+  }
+  
+  closeModal(); goto('employees'); toast('Employee updated — All stakeholders notified','success');
+  saveData();
+}
+function openAddEmployee(){
+  openModal('Add New Employee',
+    '<div class="f2">'+fld('Full Name','ne_name','e.g. Jane Otieno')+fld('Employee ID','ne_id','e.g. E013')+'</div>'+
+    '<div class="f2">'+
+      fld('Department','ne_dept','','select',['Administration','Finance','Academic','IT','Security','Catering','Library'])+
+      fld('Role / Job Title','ne_role','e.g. Accountant')+
+    '</div>'+
+    '<div class="f2">'+fld('Basic Salary (KES)','ne_basic','','number')+fld('Phone','ne_phone','07xx xxx xxx')+'</div>'+
+    fld('Email','ne_email','name@adia.ac.ke'),
+    '<button class="btn btn-gold" onclick="addEmployee()">Add Employee</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+  );
+}
+function addEmployee(){
+  var name=gv('ne_name'),id=gv('ne_id'),dept=gv('ne_dept'),role=gv('ne_role'),basic=parseFloat(gv('ne_basic'));
+  if(!name||!id||!dept||!role||!basic){toast('Please fill all required fields','error');return;}
+  EMP.push({id:id,name:name,dept:dept,role:role,basic:basic,status:'Active',phone:gv('ne_phone'),email:gv('ne_email'),joined:new Date().toISOString().split('T')[0]});
+  document.getElementById('emp-badge').textContent=EMP.length;
+  
+  // Log change and notify stakeholders
+  logChange('EMPLOYEE ADDED', name+' ('+id+') added to '+dept, 'Admin');
+  notifyStakeholders('New employee added: '+name+' ('+id+')', 'ADD_EMPLOYEE');
+  
+  closeModal(); goto('employees'); toast('Employee '+name+' added successfully — All stakeholders notified','success');
+  saveData();
+}
+function pf(l,v){return '<div class="ps-field"><div class="pf-l">'+l+'</div><div class="pf-v">'+v+'</div></div>';}
+
+// ── DELETE SYSTEM ────────────────────────────────────────────────
+function deleteEmployee(idx){
+  var e=EMP[idx];
+  if(!e){return;}
+  _deleteTarget={idx:idx, attempts:0, authenticated:[]};
+
+  var whoHtml=STAKEHOLDERS.map(function(s){
+    return '<div class="auth-who-item">'+
+      '<div class="auth-who-avatar">'+s.initial+'</div>'+
+      '<div><div class="auth-who-name">'+s.name+'</div><div class="auth-who-role">'+s.role+'</div></div>'+
+    '</div>';
+  }).join('');
+
+  var body=
+    '<div class="delete-target-box">'+
+      '<div class="dt-icon">👤</div>'+
+      '<div>'+
+        '<div class="dt-name">'+e.name+'</div>'+
+        '<div class="dt-info">'+e.id+' · '+e.dept+' · '+e.role+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="auth-warning">'+
+      '<p>⚠️ <strong>This action is irreversible and requires THREE different stakeholder authorizations.</strong> Deleting an employee removes all their records from the system.</p>'+
+    '</div>'+
+    '<div id="auth-progress" style="background:#f4f6fb;border-radius:8px;padding:10px 12px;margin-bottom:14px;display:none">'+
+      '<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">Authorizations: <span id="auth-count">0</span>/3</div>'+
+      '<div id="auth-list" style="font-size:10px;color:var(--muted)"></div>'+
+    '</div>'+
+    '<div class="auth-who">'+
+      '<div class="auth-who-title">🔐 Authorised Stakeholders (Any 3 Required)</div>'+
+      whoHtml+
+    '</div>'+
+    '<div class="f2">'+
+      '<div class="field"><label>Username</label>'+
+        '<input type="text" id="del_user" placeholder="e.g. elizabeth.mutuku" autocomplete="off">'+
+      '</div>'+
+      '<div class="field"><label>Password</label>'+
+        '<input type="password" id="del_pass" placeholder="••••••••••••" autocomplete="off" onkeydown="if(event.key===\'Enter\')attemptDelete()">'+
+      '</div>'+
+    '</div>'+
+    '<div class="auth-attempts" id="auth-msg"></div>';
+
+  // Custom red-header modal
+  document.getElementById('modal-title').innerHTML='🗑️  Authorisation Required — Delete Employee';
+  document.getElementById('modal-body').innerHTML=body;
+  document.getElementById('modal-footer').innerHTML=
+    '<button class="btn btn-red" onclick="attemptDelete()" id="delete-verify-btn">Verify Stakeholder</button>'+
+    '<button class="btn btn-outline" onclick="cancelDelete()">Cancel</button>';
+
+  // Override header colour
+  document.querySelector('.modal-hdr').style.background='var(--red)';
+  document.querySelector('.modal-hdr h3').style.color='#fff';
+  document.getElementById('modal').style.display='flex';
+  setTimeout(function(){var u=document.getElementById('del_user');if(u)u.focus();},100);
+}
+
+function attemptDelete(){
+  if(!_deleteTarget){return;}
+  var user=(gv('del_user')||'').trim().toLowerCase();
+  var pass=gv('del_pass')||'';
+  var ph=_h(pass);
+  var matched=null;
+  STAKEHOLDERS.forEach(function(s){
+    if(s.username===user && s.hash===ph) matched=s;
+  });
+
+  if(matched){
+    // Check if this stakeholder already authenticated
+    var alreadyAuth=_deleteTarget.authenticated.some(function(s){return s.username===matched.username;});
+    if(alreadyAuth){
+      var msg=document.getElementById('auth-msg');
+      if(msg) msg.innerHTML='<strong>'+matched.name+' has already authorized. Please use a different stakeholder.</strong>';
+      var passEl=document.getElementById('del_pass');
+      if(passEl){passEl.value='';passEl.focus();}
+      return;
+    }
+
+    // Add to authenticated list
+    _deleteTarget.authenticated.push(matched);
+    var authCount=_deleteTarget.authenticated.length;
+
+    // Update progress display
+    var progressDiv=document.getElementById('auth-progress');
+    var countSpan=document.getElementById('auth-count');
+    var listDiv=document.getElementById('auth-list');
+    if(progressDiv) progressDiv.style.display='block';
+    if(countSpan) countSpan.textContent=authCount;
+    if(listDiv){
+      listDiv.innerHTML='✓ Authorized: '+_deleteTarget.authenticated.map(function(s){return s.name+' ('+s.role+')';}).join(', ');
+    }
+
+    // Clear fields
+    var userEl=document.getElementById('del_user');
+    var passEl=document.getElementById('del_pass');
+    if(userEl) userEl.value='';
+    if(passEl) passEl.value='';
+
+    if(authCount >= 3){
+      // THREE STAKEHOLDERS VERIFIED — PROCEED WITH DELETION
+      var e=EMP[_deleteTarget.idx];
+      var authNames=_deleteTarget.authenticated.map(function(s){return s.name;}).join(', ');
+      
+      var logEntry={
+        action:'DELETE',
+        employee:e.name+' ('+e.id+')',
+        by:authNames,
+        at:new Date().toLocaleString('en-KE'),
+      };
+      DELETE_LOG.unshift(logEntry);
+      
+      // Also log to system change log
+      logChange('EMPLOYEE DELETED', e.name+' ('+e.id+') removed from '+e.dept, 'Authorized by: '+authNames);
+      notifyStakeholders('Employee deleted: '+e.name+' ('+e.id+') — Authorized by 3 stakeholders: '+authNames, 'DELETE_EMPLOYEE');
+      
+      EMP.splice(_deleteTarget.idx,1);
+      document.getElementById('emp-badge').textContent=EMP.length;
+
+      // Reset modal header colour
+      document.querySelector('.modal-hdr').style.background='';
+      _deleteTarget=null;
+      closeModal();
+      goto('employees');
+      toast('✓ '+e.name+' deleted — Authorized by '+authCount+' stakeholders. All stakeholders notified.','success');
+      saveData();
+
+    } else {
+      // NEED MORE AUTHORIZATIONS
+      var msg=document.getElementById('auth-msg');
+      if(msg) msg.innerHTML='<strong style="color:var(--green)">✓ '+matched.name+' verified. '+(3-authCount)+' more '+(3-authCount===1?'authorization':'authorizations')+' required.</strong>';
+      if(userEl) userEl.focus();
+      
+      // Update button text
+      var btn=document.getElementById('delete-verify-btn');
+      if(btn) btn.textContent='Verify Stakeholder '+(authCount+1)+'/3';
+    }
+
+  } else {
+    _deleteTarget.attempts++;
+    var remaining=MAX_ATTEMPTS-_deleteTarget.attempts;
+    var msg=document.getElementById('auth-msg');
+    var passEl=document.getElementById('del_pass');
+
+    // Shake animation
+    if(passEl){passEl.classList.remove('shake');void passEl.offsetWidth;passEl.classList.add('shake');}
+
+    if(remaining<=0){
+      if(msg) msg.innerHTML='<strong>Too many failed attempts. Access locked.</strong>';
+      document.querySelector('.modal-footer .btn-red').disabled=true;
+      document.querySelector('.modal-footer .btn-red').style.opacity='.4';
+      setTimeout(function(){
+        _deleteTarget=null;
+        document.querySelector('.modal-hdr').style.background='';
+        closeModal();
+        toast('Delete access locked after '+MAX_ATTEMPTS+' failed attempts','error');
+      },2000);
+    } else {
+      if(msg) msg.innerHTML='Invalid credentials. <strong>'+remaining+' attempt'+(remaining===1?'':'s')+' remaining.</strong>';
+      if(passEl){passEl.value='';passEl.focus();}
+    }
+  }
+}
+
+function cancelDelete(){
+  _deleteTarget=null;
+  document.querySelector('.modal-hdr').style.background='';
+  closeModal();
+}
+
+function viewDeleteLog(){
+  if(!DELETE_LOG.length){
+    openModal('Delete Audit Log','<div class="empty"><div class="ei">📋</div><p>No deletions have been recorded yet.</p></div>');
+    return;
+  }
+  var rows=DELETE_LOG.map(function(l){
+    return '<tr>'+
+      '<td>'+l.employee+'</td>'+
+      '<td class="bold">'+l.by+'</td>'+
+      '<td style="color:var(--muted)">'+l.at+'</td>'+
+    '</tr>';
+  }).join('');
+  openModal('Delete Audit Log — All Deletions',
+    '<table class="tbl"><thead><tr><th>Employee Deleted</th><th>Authorised By</th><th>Date &amp; Time</th></tr></thead><tbody>'+rows+'</tbody></table>'
+  );
+}
+
+function fld(label,id,val,type,opts){
+  var t=type||'text',inp;
+  if(t==='select'&&opts){
+    inp='<select id="'+id+'">'+(opts.map(function(o){return '<option'+(o===String(val)?' selected':'')+'>'+o+'</option>';})).join('')+'</select>';
+  } else if(t==='number'){
+    inp='<input type="number" id="'+id+'" value="'+val+'" min="0">';
+  } else {
+    inp='<input type="'+t+'" id="'+id+'" value="'+val+'">';
+  }
+  return '<div class="field"><label>'+label+'</label>'+inp+'</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: PAYROLL RUN
+// ═══════════════════════════════════════════════════════════════
+function pagePayroll(){
+  var ae=activeEMP();
+  var tB=ae.reduce(function(s,e){return s+e.basic;},0);
+  var tP=ae.reduce(function(s,e){return s+cPAYE(e.basic);},0);
+  var tS=ae.reduce(function(s,e){return s+cSHIF(e.basic);},0);
+  var tA=ae.reduce(function(s,e){return s+cAHL(e.basic);},0);
+  var tN=ae.reduce(function(s,e){return s+cNet(e.basic);},0);
+  var now=new Date();
+  var lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  var shortMon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var nextMonIdx=(now.getMonth()+1)%12;
+  var nextMonYear=now.getMonth()===11?now.getFullYear()+1:now.getFullYear();
+  var steps=['Verify Employees','Compute Earnings','Apply Deductions','Review & Approve','Generate Payslips'];
+  var stepsHtml='<div class="run-steps">'+steps.map(function(s,i){
+    var cls=i<PAYROLL_STEP?'done':i===PAYROLL_STEP?'active-step':'';
+    return '<div class="run-step '+cls+'"><span class="sn">'+(i<PAYROLL_STEP?'✓':(i+1))+'</span>'+s+'</div>';
+  }).join('')+'</div>';
+
+  return stepsHtml+
+  '<div class="grid2">'+
+    '<div class="card">'+cardTitle('Pay Period Details')+
+      dr('Period',mname())+
+      dr('Pay Date',lastDay+' '+mname())+
+      dr('Active Employees',ae.length)+
+      dr('Total Gross Payroll',fmt(tB))+
+    '</div>'+
+    '<div class="card">'+cardTitle('Deduction Summary')+
+      dr('Total PAYE',fmt(tP))+dr('Total SHIF',fmt(tS))+
+      dr('Total Housing Levy',fmt(tA))+dr('Total Net Pay',fmt(tN),'#1B6B3A')+
+    '</div>'+
+  '</div>'+
+  '<div class="card">'+
+    cardTitle('Payroll Preview',
+      '<div style="display:flex;gap:8px">'+
+        '<button class="btn btn-outline btn-sm" onclick="exportPayroll()">⬇ Export CSV</button>'+
+        (PAYROLL_STEP<4?'<button class="btn btn-gold btn-sm" onclick="advancePayroll()">Next Step →</button>':
+         '<button class="btn btn-green btn-sm" onclick="finalizePayroll()">✓ Finalize & Pay</button>')+
+      '</div>')+
+    (ae.length===0
+      ? '<div class="empty"><div class="ei">💰</div><p>No active employees found.<br><a style="color:var(--gold);cursor:pointer;font-weight:600" onclick="goto(\'employees\')">Add employees first →</a></p></div>'
+      : '<table class="tbl"><thead><tr>'+
+          '<th>Name</th><th>Dept</th><th>Basic</th><th>SHIF</th><th>AHL</th><th>PAYE</th><th>Net Pay</th>'+
+        '</tr></thead><tbody>'+
+        ae.map(function(e){
+          return '<tr><td class="bold">'+e.name+'</td><td>'+e.dept+'</td>'+
+            '<td>'+fmt(e.basic)+'</td><td>'+fmt(cSHIF(e.basic))+'</td><td>'+fmt(cAHL(e.basic))+'</td>'+
+            '<td class="red">'+fmt(cPAYE(e.basic))+'</td>'+
+            '<td class="grn">'+fmt(cNet(e.basic))+'</td></tr>';
+        }).join('')+
+        '</tbody></table>'
+    )+
+  '</div>';
+}
+function advancePayroll(){
+  if(PAYROLL_STEP<4){PAYROLL_STEP++;goto('payroll');toast('Moved to step '+(PAYROLL_STEP+1),'success');}
+}
+function finalizePayroll(){
+  openModal('Confirm Payroll Finalization',
+    '<p style="font-size:13px;margin-bottom:12px">You are about to finalize and process the <strong>'+mname()+'</strong> payroll.</p>'+
+    dr('Active Employees',activeEMP().length)+
+    dr('Total Gross',fmt(activeEMP().reduce(function(s,e){return s+e.basic;},0)))+
+    dr('Total Net Pay',fmt(activeEMP().reduce(function(s,e){return s+cNet(e.basic);},0)))+
+    '<p style="font-size:11px;color:var(--muted);margin-top:12px">This action will generate payslips and mark payroll as processed.</p>',
+    '<button class="btn btn-green" onclick="confirmFinalize()">✓ Confirm & Process</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+  );
+}
+function confirmFinalize(){
+  PAYROLL_STEP=0;
+  closeModal(); goto('payroll'); toast('Payroll finalized! Payslips generated for '+activeEMP().length+' employees','success');
+}
+function exportPayroll(){
+  var ae=activeEMP();
+  var csv='ID,Name,Department,Basic,SHIF,AHL,PAYE,Net Pay\n'+
+    ae.map(function(e){
+      return [e.id,e.name,e.dept,e.basic,cSHIF(e.basic).toFixed(2),cAHL(e.basic).toFixed(2),cPAYE(e.basic).toFixed(2),cNet(e.basic).toFixed(2)].join(',');
+    }).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='ADIA_Payroll_'+mname().replace(' ','_')+'.csv'; a.click();
+  toast('Payroll exported as CSV','success');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: LEAVE
+// ═══════════════════════════════════════════════════════════════
+function pageLeave(){
+  return '<div class="leave-grid">'+
+    lvc('28','Annual Leave Days')+lvc('14','Sick Leave Days')+lvc('90','Maternity (days)')+
+    lvc(LEAVE_DATA.filter(function(l){return l.status==='Active';}).length,'Currently On Leave')+
+  '</div>'+
+  '<div class="card">'+
+    cardTitle('Leave Register',
+      '<button class="btn btn-gold btn-sm" onclick="openApplyLeave()">+ Apply Leave</button>')+
+    (LEAVE_DATA.length===0
+      ? '<div class="empty"><div class="ei">🗓️</div><p>No leave requests yet. Click <strong>+ Apply Leave</strong> to add one.</p></div>'
+      : '<table class="tbl"><thead><tr>'+
+          '<th>Ref</th><th>Employee</th><th>Department</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Actions</th>'+
+        '</tr></thead><tbody>'+
+        LEAVE_DATA.map(function(l,i){
+          return '<tr>'+
+            '<td>'+l.id+'</td><td class="bold">'+l.emp+'</td><td>'+l.dept+'</td>'+
+            '<td>'+l.type+'</td><td>'+l.from+'</td><td>'+l.to+'</td><td>'+l.days+'</td>'+
+            '<td>'+pill(l.status)+'</td>'+
+            '<td>'+
+              (l.status==='Pending'?
+                '<button class="act-link" style="color:var(--green)" onclick="approveLeave('+i+')">Approve</button>'+
+                '<button class="act-link" style="color:var(--red)" onclick="rejectLeave('+i+')">Reject</button>':
+                '<button class="act-link" onclick="viewLeave('+i+')">View</button>')+
+            '</td>'+
+          '</tr>';
+        }).join('')+
+        '</tbody></table>'
+    )+
+  '</div>'+
+  '<div class="grid2" style="margin-top:14px">'+
+    '<div class="card">'+cardTitle('Leave Balance by Employee')+
+      (EMP.filter(function(e){return e.status!=='Inactive';}).length===0
+        ? '<div class="empty" style="padding:10px 0"><p style="font-size:12px">No employees to display balances for.</p></div>'
+        : EMP.filter(function(e){return e.status!=='Inactive';}).slice(0,5).map(function(e){
+            var used=LEAVE_DATA.filter(function(l){return l.emp===e.name;}).reduce(function(s,l){return s+l.days;},0);
+            return '<div class="pb-wrap"><div class="pb-row"><span style="font-size:12px">'+e.name+'</span><span style="color:var(--muted);font-size:11px">'+used+'/28 days used</span></div>'+
+              '<div class="pb"><div class="pb-fill" style="width:'+Math.min(used/28*100,100)+'%"></div></div></div>';
+          }).join('')
+      )+
+    '</div>'+
+    '<div class="card">'+cardTitle('Leave Type Summary')+
+      dr('Annual Leave',LEAVE_DATA.filter(function(l){return l.type==='Annual';}).length+' requests')+
+      dr('Sick Leave',LEAVE_DATA.filter(function(l){return l.type==='Sick Leave';}).length+' requests')+
+      dr('Maternity / Paternity',LEAVE_DATA.filter(function(l){return l.type==='Paternity'||l.type==='Maternity';}).length+' requests')+
+      dr('Pending Approval',LEAVE_DATA.filter(function(l){return l.status==='Pending';}).length+' requests','#856404')+
+    '</div>'+
+  '</div>';
+}
+function lvc(n,l){return '<div class="lv-card"><div class="lv-n">'+n+'</div><div class="lv-l">'+l+'</div></div>';}
+function approveLeave(i){LEAVE_DATA[i].status='Approved';goto('leave');toast(LEAVE_DATA[i].emp+' leave approved','success');saveData();}
+function rejectLeave(i){LEAVE_DATA[i].status='Rejected';goto('leave');toast(LEAVE_DATA[i].emp+' leave rejected');saveData();}
+function viewLeave(i){
+  var l=LEAVE_DATA[i];
+  openModal('Leave Details — '+l.emp,
+    dr('Employee',l.emp)+dr('Department',l.dept)+dr('Leave Type',l.type)+
+    dr('From',l.from)+dr('To',l.to)+dr('Days',l.days)+
+    dr('Reason',l.reason)+dr('Status',pill(l.status))
+  );
+}
+function openApplyLeave(){
+  var empOpts=EMP.filter(function(e){return e.status==='Active';}).map(function(e){return e.name;});
+  openModal('Apply for Leave',
+    fld('Employee','al_emp','','select',empOpts)+
+    '<div class="f2">'+
+      fld('Leave Type','al_type','','select',['Annual','Sick Leave','Maternity','Paternity','Study Leave','Compassionate'])+
+      fld('Number of Days','al_days','','number')+
+    '</div>'+
+    '<div class="f2">'+fld('From Date','al_from','','date')+fld('To Date','al_to','','date')+'</div>'+
+    fld('Reason','al_reason','Brief reason for leave request'),
+    '<button class="btn btn-gold" onclick="submitLeave()">Submit Request</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+  );
+}
+function submitLeave(){
+  var emp=gv('al_emp'),type=gv('al_type'),days=parseInt(gv('al_days')),from=gv('al_from'),to=gv('al_to');
+  if(!emp||!type||!days||!from||!to){toast('Please fill all fields','error');return;}
+  var empData=EMP.find(function(e){return e.name===emp;})||{dept:''};
+  var newId='L00'+(LEAVE_DATA.length+1);
+  LEAVE_DATA.push({id:newId,emp:emp,dept:empData.dept,type:type,from:from,to:to,days:days,status:'Pending',reason:gv('al_reason')});
+  closeModal(); goto('leave'); toast('Leave request submitted for '+emp,'success');
+  saveData();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: STATUTORY
+// ═══════════════════════════════════════════════════════════════
+function pageStatutory(){
+  var ae=activeEMP();
+  var tP=ae.reduce(function(s,e){return s+cPAYE(e.basic);},0);
+  var tS=ae.reduce(function(s,e){return s+cSHIF(e.basic);},0);
+  var tA=ae.reduce(function(s,e){return s+cAHL(e.basic);},0);
+  var nssf=ae.length*1260;
+  var now=new Date();
+  var shortMon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var nextMonIdx=(now.getMonth()+1)%12;
+  var nextMonYear=now.getMonth()===11?now.getFullYear()+1:now.getFullYear();
+  var filingDeadline='9 '+shortMon[nextMonIdx]+' '+nextMonYear;
+  function sc(icon,name,amt,due,status,cls,filingAction){
+    return '<div class="stat-card">'+
+      '<div class="sc-icon">'+icon+'</div>'+
+      '<div class="sc-name">'+name+'</div>'+
+      '<div class="sc-due">'+due+'</div>'+
+      '<div class="sc-amt">'+amt+'</div>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">'+
+        '<span class="sc-status '+cls+'">'+status+'</span>'+
+        (filingAction?'<button class="btn btn-navy btn-sm" onclick="'+filingAction+'">File</button>':'<span style="font-size:10px;color:var(--muted)">Completed</span>')+
+      '</div>'+
+    '</div>';
+  }
+  return '<div class="stat-grid" style="margin-bottom:18px">'+
+    sc('🏦','PAYE — KRA',fmt(tP),'Due '+filingDeadline,'Pending','sc-pending','filePAYE()')+
+    sc('🏥','SHIF',fmt(tS),'Due '+filingDeadline,'Pending','sc-pending','fileSHIF()')+
+    sc('🏠','Housing Levy (AHL)',fmt(tA),'Due '+filingDeadline,'Pending','sc-pending','fileAHL()')+
+    sc('📋','NSSF',fmt(nssf),'Due by 15th next month','Pending','sc-pending','fileNSSF()')+
+  '</div>'+
+  '<div class="card">'+cardTitle('Compliance Calendar')+
+    (ae.length===0
+      ? '<div class="empty"><div class="ei">🏛️</div><p>Add employees to generate statutory obligations.</p></div>'
+      : '<table class="tbl"><thead><tr><th>Obligation</th><th>Period</th><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead><tbody>'+
+          tr(['PAYE',mname(),filingDeadline,fmt(tP),pill('Pending')])+
+          tr(['SHIF',mname(),filingDeadline,fmt(tS),pill('Pending')])+
+          tr(['Housing Levy',mname(),filingDeadline,fmt(tA),pill('Pending')])+
+          tr(['NSSF',mname(),'15th next month',fmt(nssf),pill('Pending')])+
+        '</tbody></table>'
+    )+
+  '</div>';
+}
+function tr(cells){return '<tr>'+cells.map(function(c){return '<td>'+c+'</td>';}).join('')+'</tr>';}
+function confirmFiling(type,amt){
+  openModal('Confirm Filing — '+type,
+    '<p style="font-size:13px;margin-bottom:12px">You are about to submit the <strong>'+type+'</strong> return for <strong>'+mname()+'</strong>.</p>'+
+    dr('Amount',fmt(amt))+dr('Filing Period',mname())+dr('Due Date','9th of next month')+
+    '<p style="font-size:11px;color:var(--muted);margin-top:12px">This will mark the obligation as filed in your compliance register.</p>',
+    '<button class="btn btn-green" onclick="completeFiling(\''+type+'\')">✓ Confirm Filing</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+  );
+}
+function completeFiling(type){closeModal();toast(type+' return filed successfully','success');}
+function filePAYE(){var ae=activeEMP();confirmFiling('PAYE',ae.reduce(function(s,e){return s+cPAYE(e.basic);},0));}
+function fileSHIF(){var ae=activeEMP();confirmFiling('SHIF',ae.reduce(function(s,e){return s+cSHIF(e.basic);},0));}
+function fileAHL(){var ae=activeEMP();confirmFiling('Housing Levy (AHL)',ae.reduce(function(s,e){return s+cAHL(e.basic);},0));}
+function fileNSSF(){confirmFiling('NSSF',activeEMP().length*1260);}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: REPORTS
+// ═══════════════════════════════════════════════════════════════
+function pageReports(){
+  var ae=activeEMP();
+  var tB=ae.reduce(function(s,e){return s+e.basic;},0);
+  var tP=ae.reduce(function(s,e){return s+cPAYE(e.basic);},0);
+  var months = tB > 0 ? [[mname(), tB, tP]] : [];
+  function rptCard(icon,name,desc,action){
+    return '<div class="rpt-card" onclick="'+action+'">'+
+      '<div class="rpt-icon">'+icon+'</div>'+
+      '<div class="rpt-name">'+name+'</div>'+
+      '<div class="rpt-desc">'+desc+'</div>'+
+    '</div>';
+  }
+  return '<div class="rpt-grid">'+
+    rptCard('📊','Payroll Summary','Monthly gross, deductions & net pay','showReport(\'payroll\')')+
+    rptCard('🏛️','Statutory Report','PAYE, SHIF, AHL & NSSF filings','showReport(\'statutory\')')+
+    rptCard('👥','Headcount Report','Staff count by department & status','showReport(\'headcount\')')+
+    rptCard('💳','Payslip Batch','Generate all payslips for current period','generateBatchPayslips()')+
+    rptCard('📅','Leave Report','Leave balances & utilisation summary','showReport(\'leave\')')+
+    rptCard('📈','Cost Analysis','Department-wise payroll cost breakdown','showReport(\'cost\')')+
+  '</div>'+
+  '<div class="card">'+cardTitle('Monthly Payroll Trend',
+    '<button class="btn btn-outline btn-sm" onclick="exportTrend()">⬇ Export</button>')+
+    '<table class="tbl"><thead><tr><th>Month</th><th>Gross Payroll</th><th>Total PAYE</th><th>Total SHIF</th><th>Net Pay</th></tr></thead><tbody>'+
+    (months.length===0
+      ? '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">No payroll runs recorded yet. Process your first payroll to see trend data.</td></tr>'
+      : months.map(function(r){
+          return '<tr><td class="bold">'+r[0]+'</td><td>'+fmt(r[1])+'</td>'+
+            '<td class="red">'+fmt(r[2])+'</td>'+
+            '<td>'+fmt(r[1]*.0275)+'</td>'+
+            '<td class="grn">'+fmt(r[1]-r[2])+'</td></tr>';
+        }).join('')
+    )+
+    '</tbody></table>'+
+  '</div>';
+}
+function showReport(type){
+  var titles={payroll:'Payroll Summary Report',statutory:'Statutory Compliance Report',headcount:'Headcount Report',leave:'Leave Report',cost:'Cost Analysis Report'};
+  var ae=activeEMP();
+  var body='';
+  if(type==='headcount'){
+    var depts={};
+    EMP.forEach(function(e){depts[e.dept]=(depts[e.dept]||[]);depts[e.dept].push(e);});
+    body=Object.keys(depts).map(function(d){
+      var emps=depts[d];
+      return dr(d,emps.length+' staff ('+emps.filter(function(e){return e.status==='Active';}).length+' active)');
+    }).join('');
+  } else if(type==='cost'){
+    var depts2={};
+    ae.forEach(function(e){depts2[e.dept]=(depts2[e.dept]||0)+e.basic;});
+    body=Object.keys(depts2).map(function(d){return dr(d,fmt(depts2[d]));}).join('');
+  } else if(type==='leave'){
+    body=dr('Total Requests',LEAVE_DATA.length)+dr('Approved',LEAVE_DATA.filter(function(l){return l.status==='Approved';}).length)+
+      dr('Pending',LEAVE_DATA.filter(function(l){return l.status==='Pending';}).length)+
+      dr('Active (Currently on Leave)',LEAVE_DATA.filter(function(l){return l.status==='Active';}).length);
+  } else {
+    var tB=ae.reduce(function(s,e){return s+e.basic;},0);
+    var tP=ae.reduce(function(s,e){return s+cPAYE(e.basic);},0);
+    body=dr('Period',mname())+dr('Gross Payroll',fmt(tB))+dr('PAYE',fmt(tP))+
+      dr('SHIF',fmt(tB*.0275))+dr('AHL',fmt(tB*.015))+dr('Net Pay',fmt(tB-tP),'#1B6B3A');
+  }
+  openModal(titles[type]||'Report',body,
+    '<button class="btn btn-navy" onclick="printReport()">🖨 Print</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Close</button>'
+  );
+}
+function generateBatchPayslips(){
+  toast('Generating payslips for '+activeEMP().length+' employees… Downloading as ZIP','success');
+}
+function exportTrend(){toast('Trend report exported','success');}
+function printReport(){window.print();}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: SETTINGS
+// ═══════════════════════════════════════════════════════════════
+function pageSettings(){
+  function toggle(id,checked,label,sub){
+    return '<div class="toggle-row">'+
+      '<div><div class="toggle-label">'+label+'</div><div style="font-size:10px;color:var(--muted)">'+sub+'</div></div>'+
+      '<label class="toggle"><input type="checkbox" id="'+id+'" '+(checked?'checked':'')+' onchange="saveSetting(\''+id+'\',this.checked)"><span class="toggle-slider"></span></label>'+
+    '</div>';
+  }
+  return '<div class="grid2">'+
+    '<div class="card">'+cardTitle('Organisation Details')+
+      dr('Organisation','ADIA Training Centre')+dr('KRA PIN','P051234567A')+
+      dr('KRA Branch','Nairobi Central')+dr('Pay Cycle','Monthly')+dr('Currency','KES')+
+      '<div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="editOrg()">Edit Details</button></div>'+
+    '</div>'+
+    '<div class="card">'+cardTitle('🔐 Delete Authorisation')+
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Any 3 of these 6 stakeholders must authorize each employee deletion:</div>'+
+      STAKEHOLDERS.map(function(s){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--surface2)">'+
+          '<div style="width:28px;height:28px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--gold);flex-shrink:0">'+s.initial+'</div>'+
+          '<div><div style="font-size:12px;font-weight:600;color:var(--navy)">'+s.name+'</div>'+
+          '<div style="font-size:10px;color:var(--muted)">'+s.role+' · @'+s.username+'</div></div>'+
+          '<div style="margin-left:auto"><span class="pill pill-active">Authorised</span></div>'+
+        '</div>';
+      }).join('')+
+      '<div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="viewDeleteLog()">📋 View Delete Log</button></div>'+
+    '</div>'+
+  '</div>'+
+    '<div class="card">'+cardTitle('Tax Configuration (KRA 2026)')+
+      dr('SHIF Rate','2.75% of Gross')+dr('AHL Rate','1.5% of Gross')+
+      dr('Personal Relief','KES 2,400 / month')+dr('PAYE Filing Day','9th of each month')+
+      dr('NSSF Tier I','6% on KES 0–7,000')+dr('NSSF Tier II','6% on KES 7,001–36,000')+
+    '</div>'+
+  '</div>'+
+  '<div class="grid2">'+
+    '<div class="card">'+cardTitle('PAYE Tax Bands (Monthly)')+
+      dr('KES 0 – 24,000','10%')+dr('KES 24,001 – 32,333','25%')+
+      dr('KES 32,334 – 500,000','30%')+dr('KES 500,001 – 800,000','32.5%')+dr('Above KES 800,000','35%')+
+    '</div>'+
+    '<div class="card">'+cardTitle('Notifications')+
+      toggle('notif_payslip',NOTIFY_SETTINGS.emailPayslip,'Email Payslips','Send payslip to employee email on processing')+
+      toggle('notif_sms',NOTIFY_SETTINGS.smsPayday,'SMS on Pay Day','Notify employees via SMS when salary is processed')+
+      toggle('notif_filing',NOTIFY_SETTINGS.reminderFiling,'Filing Reminders','Alert 3 days before statutory deadlines')+
+      toggle('notif_audit',NOTIFY_SETTINGS.auditLog,'Audit Logging','Log all payroll changes for compliance')+
+    '</div>'+
+  '</div>'+
+  '<div class="grid2">'+
+    '<div class="card">'+cardTitle('System')+
+      dr('System Version','ADIA Payroll v2.0')+dr('Financial Year','Jan – Dec 2026')+
+      dr('Administrator','Andy Guya')+dr('Last Updated','16 Apr 2026')+
+      '<div style="margin-top:10px;display:flex;gap:8px">'+
+        '<button class="btn btn-navy btn-sm" onclick="toast(\'Backup created successfully\',\'success\')">💾 Backup Data</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="toast(\'System check passed ✓\',\'success\')">🔍 System Check</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+cardTitle('User Account')+
+      dr('Name','Andrew Guya')+dr('Role','Payroll Administrator')+dr('Email','a.guya@adia.ac.ke')+
+      '<div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="changePassword()">🔒 Change Password</button></div>'+
+    '</div>'+
+  '</div>';
+}
+function saveSetting(id,val){
+  var map={notif_payslip:'emailPayslip',notif_sms:'smsPayday',notif_filing:'reminderFiling',notif_audit:'auditLog'};
+  if(map[id]) NOTIFY_SETTINGS[map[id]]=val;
+  toast('Setting saved','success');
+}
+function editOrg(){
+  openModal('Edit Organisation Details',
+    fld('Organisation Name','org_name','ADIA Training Centre')+
+    fld('KRA PIN','org_pin','P051234567A')+
+    fld('KRA Branch','org_branch','Nairobi Central')+
+    fld('Pay Day','org_payday','30','number'),
+    '<button class="btn btn-gold" onclick="closeModal();toast(\'Organisation details saved\',\'success\')">Save</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+  );
+}
+function changePassword(){
+  openModal('Change Password',
+    fld('Current Password','cp_cur','','password')+
+    fld('New Password','cp_new','','password')+
+    fld('Confirm New Password','cp_conf','','password'),
+    '<button class="btn btn-gold" onclick="closeModal();toast(\'Password changed successfully\',\'success\')">Update Password</button>'+
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: PAYE CALCULATOR
+// ═══════════════════════════════════════════════════════════════
+function pagePAYE(){
+  return '<div style="max-width:520px;margin:0 auto">'+
+    '<div class="sec-label">Earnings</div>'+
+    fld('Basic Pay (KES)','pc_basic','')+
+    '<div class="f2">'+fld('Housing Allowance','pc_housing','')+fld('Transport Allowance','pc_transport','')+'</div>'+
+    '<div class="f2">'+fld('Other Allowances','pc_other','')+fld('Benefits in Kind','pc_bik','')+'</div>'+
+    '<div class="sec-label">Tax Reliefs</div>'+
+    '<div class="field"><label>Insurance / NHIF Premium (KES/month)</label>'+
+      '<input type="number" id="pc_ins" placeholder="0" min="0"><div class="hint">Relief = 15% of premium, max KES 5,000/month</div></div>'+
+    '<div class="field"><label>Mortgage Interest (KES/month)</label>'+
+      '<input type="number" id="pc_mort" placeholder="0" min="0"><div class="hint">Relief = 25% of interest, max KES 25,000/month</div></div>'+
+    '<div style="display:flex;gap:10px;margin-top:14px">'+
+      '<button class="btn btn-navy" style="flex:1;padding:10px;font-size:14px" onclick="runPAYE()">Calculate PAYE</button>'+
+      '<button class="btn btn-outline" onclick="resetPAYE()">Reset</button>'+
+    '</div>'+
+    '<div id="paye-res"></div>'+
+  '</div>';
+}
+function runPAYE(){
+  var basic=gn('pc_basic');
+  if(!basic){toast('Please enter Basic Pay first','error');return;}
+  var gross=basic+gn('pc_housing')+gn('pc_transport')+gn('pc_other')+gn('pc_bik');
+  var shif=cSHIF(gross),ahl=cAHL(gross),taxable=gross-shif-ahl;
+  var inctax=cIT(taxable),pr=2400;
+  var insR=Math.min(gn('pc_ins')*.15,5000),mortR=Math.min(gn('pc_mort')*.25,25000);
+  var totalR=pr+insR+mortR,netPAYE=Math.max(0,inctax-totalR);
+  var payAfter=gross-shif-ahl-netPAYE;
+  function rrow(l,v){return '<div class="res-row"><span class="rl">'+l+'</span><span class="rv">'+fmt(v)+'</span></div>';}
+  function sbox(l,v){return '<div class="sub-box"><span class="sl">'+l+'</span><span class="sv">'+fmt(v)+'</span></div>';}
+  document.getElementById('paye-res').innerHTML=
+    '<div class="res-head">'+
+      '<div class="chk"><svg viewBox="0 0 13 13" fill="none"><polyline points="2.5,6.5 5.5,9.5 10.5,3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'+
+      '<div class="res-title">PAYE Calculation Complete</div></div>'+
+    '<div class="res-period">Results for '+mname()+'</div>'+
+    rrow('Basic Pay',basic)+(gross!==basic?rrow('Gross Pay',gross):'')+
+    '<div class="grp-hd">Deductions</div>'+rrow('SHIF deductions',shif)+rrow('Housing Levy',ahl)+
+    sbox('Total Deductions',shif+ahl)+rrow('Taxable Pay',taxable)+
+    '<div class="grp-hd">P.A.Y.E Deductions</div>'+rrow('Income Tax',inctax)+rrow('Personal Relief',pr)+
+    (insR?rrow('Insurance Relief',insR):'')+(mortR?rrow('Mortgage Interest Relief',mortR):'')+
+    sbox('P.A.Y.E. Total',netPAYE)+
+    '<div class="res-row"><span class="rl">Pay after Tax</span><span class="rv">'+fmt(payAfter)+'</span></div>'+
+    '<div class="net-card"><div class="nl">Pay after Tax</div><div class="nv">'+fmt(payAfter)+'</div></div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px">'+
+      '<button class="btn btn-outline btn-sm" onclick="copyPAYEResult('+payAfter+')">📋 Copy Result</button>'+
+      '<button class="btn btn-navy btn-sm" onclick="goto(\'payslip\')">View Payslip →</button>'+
+    '</div>';
+}
+function resetPAYE(){
+  ['pc_basic','pc_housing','pc_transport','pc_other','pc_bik','pc_ins','pc_mort'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('paye-res').innerHTML='';
+}
+function copyPAYEResult(v){
+  if(navigator.clipboard) navigator.clipboard.writeText(fmt(v));
+  toast('Net pay copied to clipboard','success');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE: PAYSLIP
+// ═══════════════════════════════════════════════════════════════
+var LOGO_SRC='';
+function pagePayslip(){
+  LOGO_SRC=document.getElementById('sidebar-logo').src;
+  if(EMP.length===0){
+    return '<div class="payslip-wrap"><div style="padding:40px;text-align:center;color:var(--muted)">'+
+      '<div style="font-size:36px;margin-bottom:12px">📄</div>'+
+      '<div style="font-size:14px;font-weight:600;margin-bottom:8px">No Employees Yet</div>'+
+      '<p style="font-size:12px;margin-bottom:16px">Add employees to generate payslips.</p>'+
+      '<button class="btn btn-gold" onclick="goto(\'employees\')">+ Add Employees</button>'+
+    '</div></div>';
+  }
+  var empOpts=EMP.map(function(e,i){return '<option value="'+i+'">'+e.name+' — '+e.dept+'</option>';}).join('');
+  return '<div class="payslip-wrap">'+
+    '<div class="ps-header">'+
+      '<img src="'+LOGO_SRC+'" alt="ADIA">'+
+      '<div class="ps-org"><h2>ADIA Training Centre</h2><p>Nairobi, Kenya · P051234567A</p></div>'+
+      '<div class="ps-period"><div class="pm">'+mname()+'</div><div class="pp">Pay Period</div></div>'+
+    '</div>'+
+    '<div class="ps-body">'+
+      '<div class="field" style="margin-bottom:12px">'+
+        '<label>Select Employee</label>'+
+        '<select onchange="updatePayslip(this.value)" style="width:100%;padding:8px;font-size:13px;border:1px solid var(--border);border-radius:7px">'+empOpts+'</select>'+
+      '</div>'+
+      '<div class="ps-actions">'+
+        '<button class="btn btn-navy btn-sm" onclick="printPayslip()">🖨 Print Payslip</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="emailPayslip()">✉ Email to Employee</button>'+
+        '<button class="btn btn-gold btn-sm" onclick="downloadPayslip()">⬇ Download PDF</button>'+
+      '</div>'+
+      '<div id="ps-detail">'+buildPayslip(EMP[0])+'</div>'+
+    '</div>'+
+    '<div class="ps-footer">This is a computer-generated payslip. For queries contact payroll@adiatraining.ac.ke</div>'+
+  '</div>';
+}
+function buildPayslip(e){
+  var g=e.basic,s=cSHIF(g),a=cAHL(g),p=cPAYE(g),n=cNet(g);
+  return '<div class="ps-emp">'+
+    pf('Employee ID',e.id)+pf('Full Name',e.name)+pf('Department',e.dept)+pf('Role',e.role)+
+  '</div>'+
+  '<table class="ps-tbl"><thead><tr><th>Description</th><th>Amount (KES)</th></tr></thead><tbody>'+
+    '<tr class="grp"><td colspan="2">Earnings</td></tr>'+
+    '<tr><td>Basic Salary</td><td>'+fmt(g)+'</td></tr>'+
+    '<tr class="total"><td>Gross Pay</td><td>'+fmt(g)+'</td></tr>'+
+    '<tr class="grp"><td colspan="2">Statutory Deductions</td></tr>'+
+    '<tr><td>SHIF (2.75%)</td><td>'+fmt(s)+'</td></tr>'+
+    '<tr><td>Housing Levy / AHL (1.5%)</td><td>'+fmt(a)+'</td></tr>'+
+    '<tr><td>PAYE Tax</td><td>'+fmt(p)+'</td></tr>'+
+    '<tr class="total"><td>Total Deductions</td><td>'+fmt(s+a+p)+'</td></tr>'+
+  '</tbody></table>'+
+  '<div class="ps-net"><div class="pn-l">Net Pay — '+mname()+'</div><div class="pn-v">'+fmt(n)+'</div></div>';
+}
+function updatePayslip(idx){
+  document.getElementById('ps-detail').innerHTML=buildPayslip(EMP[parseInt(idx)]);
+}
+function printPayslip(){
+  var content=document.querySelector('.payslip-wrap').innerHTML;
+  var w=window.open('','_blank','width=700,height=900');
+  w.document.write('<html><head><title>Payslip</title><style>body{font-family:sans-serif;padding:20px}.ps-header{background:#0D1B4B;color:#fff;padding:16px;display:flex;align-items:center;gap:12px}.ps-header img{width:48px;height:48px;border-radius:6px}.ps-header h2{color:#C8960C;font-size:13px}.ps-header p{font-size:10px;opacity:.6}.ps-period{margin-left:auto;text-align:right;color:#C8960C;font-size:11px}.ps-emp{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f4f6fb;padding:10px;border-radius:6px;margin:10px 0}.pf-l{font-size:10px;color:#6b7a9e}.pf-v{font-weight:600;font-size:11px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0D1B4B;color:#C8960C;padding:6px 8px;text-align:left}td{padding:6px 8px;border-bottom:1px solid #edf0f8}.grp td{background:#edf0f8;font-weight:700;font-size:9px;text-transform:uppercase}.total td{font-weight:700;background:#f4f6fb}.ps-net{background:#0D1B4B;color:#fff;padding:12px;border-radius:6px;display:flex;justify-content:space-between;margin-top:10px}.pn-l{font-size:11px;opacity:.7}.pn-v{font-size:18px;font-weight:700;color:#C8960C}</style></head><body>'+content+'</body></html>');
+  w.document.close(); w.print();
+}
+function emailPayslip(){toast('Payslip emailed to employee','success');}
+function downloadPayslip(){toast('Payslip download initiated (PDF generation requires server)','success');}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE MAP
+// ═══════════════════════════════════════════════════════════════
+var PAGES={
+  dashboard:pageDashboard,employees:pageEmployees,payroll:pagePayroll,
+  leave:pageLeave,statutory:pageStatutory,reports:pageReports,
+  settings:pageSettings,paye:pagePAYE,payslip:pagePayslip,
+};
+
+// ── PERSISTENCE ──
+function saveData(){
+  try{
+    localStorage.setItem('adia_emp',JSON.stringify(EMP));
+    localStorage.setItem('adia_leave',JSON.stringify(LEAVE_DATA));
+    localStorage.setItem('adia_changelog',JSON.stringify(CHANGE_LOG));
+    localStorage.setItem('adia_deletelog',JSON.stringify(DELETE_LOG));
+  }catch(e){}
+}
+function loadData(){
+  try{
+    var e=localStorage.getItem('adia_emp');
+    if(e){EMP=JSON.parse(e);}
+    var l=localStorage.getItem('adia_leave');
+    if(l){LEAVE_DATA=JSON.parse(l);}
+    var c=localStorage.getItem('adia_changelog');
+    if(c){CHANGE_LOG=JSON.parse(c);}
+    var d=localStorage.getItem('adia_deletelog');
+    if(d){DELETE_LOG=JSON.parse(d);}
+  }catch(e){}
+}
+loadData();
+
+// ── INIT ──
+document.getElementById('month-pill').textContent = mname();
+document.getElementById('page-sub').textContent = 'Overview · ' + mname();
+document.getElementById('emp-badge').textContent = EMP.length;
+document.getElementById('content').innerHTML = pageDashboard();
+</script>
 </body>
-
 </html>
